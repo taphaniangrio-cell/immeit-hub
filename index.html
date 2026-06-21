@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur d'articles LinkedIn — IMMEIT</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Écran de configuration -->
+  <div id="config-screen" class="screen">
+    <div class="card">
+      <h1>Générateur d'articles LinkedIn</h1>
+      <p class="subtitle">IMMEIT — Outil interne</p>
+      <p class="desc">Cet utilitaire utilise l'API Groq (modèle Llama 3 70B, gratuit) pour générer des posts LinkedIn à partir d'actualités du secteur maintenance industrielle.</p>
+      <form id="config-form">
+        <label for="api-key">Clé API Groq</label>
+        <input type="password" id="api-key" placeholder="gsk_..." required>
+        <p class="hint">Obtenez une clé gratuitement sur <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></p>
+        <button type="submit" class="btn-primary">Continuer</button>
+      </form>
+      <p id="config-error" class="error hidden"></p>
+    </div>
+  </div>
+
+  <!-- Écran principal -->
+  <div id="main-screen" class="screen hidden">
+    <header>
+      <div class="header-left">
+        <h1>Articles LinkedIn</h1>
+        <span class="badge">IMMEIT</span>
+      </div>
+      <div class="header-right">
+        <span id="quota-display" class="quota-badge"></span>
+        <button id="btn-new" class="btn-primary">+ Nouvel article</button>
+        <button id="btn-config" class="btn-outline" title="Configuration">⚙</button>
+      </div>
+    </header>
+
+    <div class="filters">
+      <button class="filter-btn active" data-filter="">Tous</button>
+      <button class="filter-btn" data-filter="brouillon">Brouillon</button>
+      <button class="filter-btn" data-filter="en_revision">En révision</button>
+      <button class="filter-btn" data-filter="valide">Validé</button>
+      <button class="filter-btn" data-filter="publie">Publié</button>
+      <button class="filter-btn" data-filter="archive">Archivé</button>
+    </div>
+
+    <div id="article-list" class="article-list"><div class="empty">Chargement...</div></div>
+  </div>
+
+  <!-- Écran éditeur -->
+  <div id="editor-screen" class="screen hidden">
+    <header>
+      <div class="header-left">
+        <button id="btn-back" class="btn-outline">&larr; Retour</button>
+        <h2 id="editor-title">Nouvel article</h2>
+      </div>
+      <span id="editor-status" class="badge"></span>
+    </header>
+
+    <div class="editor-body">
+      <div class="field">
+        <label>Titre interne</label>
+        <input type="text" id="edit-titre" placeholder="Titre interne (non publié)">
+      </div>
+      <div class="field">
+        <label>Corps de l'article</label>
+        <textarea id="edit-corps" rows="14" placeholder="Contenu de l'article..."></textarea>
+        <span class="word-count" id="word-count">0 mots</span>
+      </div>
+      <div class="field">
+        <label>Hashtags (séparés par des espaces)</label>
+        <input type="text" id="edit-hashtags" placeholder="#maintenance #GMAO">
+      </div>
+      <div class="editor-actions">
+        <button id="btn-save" class="btn-primary">Enregistrer</button>
+        <button id="btn-regen" class="btn-outline">Régénérer avec IA</button>
+        <button id="btn-validate" class="btn-success">Valider</button>
+        <button id="btn-copy" class="btn-primary">Copier pour LinkedIn</button>
+        <button id="btn-delete" class="btn-danger">Supprimer</button>
+      </div>
+      <div id="regen-box" class="field hidden">
+        <label>Consignes pour la régénération</label>
+        <textarea id="regen-feedback" rows="3" placeholder="Plus court, plus technique, autre angle..."></textarea>
+        <button id="btn-regen-go" class="btn-primary">Confirmer la régénération</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale de sélection d'actualité -->
+  <div id="news-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Choisir une actualité source</h2>
+        <button id="modal-close" class="btn-outline">&times;</button>
+      </div>
+      <div class="modal-body" id="news-list"><div class="empty">Recherche des actualités...</div></div>
+      <div class="modal-footer">
+        <button id="btn-ai-pick" class="btn-primary">Laisser l'IA choisir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
