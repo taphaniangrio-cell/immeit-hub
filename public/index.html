@@ -51,6 +51,11 @@
     </div>
 
     <div id="article-list" class="article-list"><div class="empty">Chargement...</div></div>
+    <div id="pagination" class="pagination hidden">
+      <button id="btn-prev" class="btn-outline">&larr; Précédent</button>
+      <span id="page-info"></span>
+      <button id="btn-next" class="btn-outline">Suivant &rarr;</button>
+    </div>
   </div>
 
   <!-- Écran éditeur -->
@@ -63,6 +68,8 @@
       <span id="editor-status" class="badge"></span>
     </header>
 
+    <div id="status-bar" class="status-bar hidden"></div>
+
     <div class="editor-body">
       <div class="editor-layout">
         <div class="editor-main">
@@ -71,13 +78,14 @@
             <input type="text" id="edit-titre" placeholder="Titre interne (non publié)">
           </div>
           <div class="field">
-            <label>Corps de l'article</label>
+            <label>Corps de l'article <span id="char-count" class="char-count"></span></label>
             <textarea id="edit-corps" rows="14" placeholder="Contenu de l'article..."></textarea>
             <span class="word-count" id="word-count">0 mots</span>
           </div>
           <div class="field">
-            <label>Hashtags (séparés par des espaces)</label>
-            <input type="text" id="edit-hashtags" placeholder="#maintenance #GMAO">
+            <label>Hashtags</label>
+            <input type="text" id="edit-hashtags" placeholder="#maintenance #GMAO #fiabilite">
+            <div id="hashtag-suggestions" class="hashtag-suggestions"></div>
           </div>
         </div>
 
@@ -90,14 +98,20 @@
             <label>Dates</label>
             <div id="edit-dates" class="source-display">—</div>
           </div>
+          <div class="field">
+            <label>Sauvegarde</label>
+            <div id="save-indicator" class="save-indicator">—</div>
+          </div>
         </div>
       </div>
 
       <div class="editor-actions">
         <button id="btn-save" class="btn-primary">Enregistrer</button>
-        <button id="btn-regen" class="btn-outline">Régénérer avec IA</button>
         <button id="btn-validate" class="btn-success">Valider</button>
         <button id="btn-copy" class="btn-primary">Copier pour LinkedIn</button>
+        <button id="btn-regen" class="btn-outline">Régénérer avec IA</button>
+        <button id="btn-archive" class="btn-archive">Archiver</button>
+        <button id="btn-restore" class="btn-outline">Restaurer en brouillon</button>
         <button id="btn-delete" class="btn-danger">Supprimer</button>
       </div>
 

@@ -12,8 +12,8 @@ module.exports = async (req, res) => {
           if (!article) return res.status(404).json({ error: 'Article introuvable' });
           return res.status(200).json({ article });
         }
-        const articles = await db.getArticles({ statut: req.query.statut || null });
-        return res.status(200).json({ articles });
+        const result = await db.getArticles({ statut: req.query.statut || null, page: req.query.page, limit: req.query.limit });
+        return res.status(200).json(result);
       }
 
       case 'POST': {

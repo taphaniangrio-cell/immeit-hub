@@ -23,7 +23,9 @@ textarea{resize:vertical}
 .btn-success:hover{background:#047857}
 .btn-danger{background:var(--danger);color:#fff}
 .btn-danger:hover{background:#b91c1c}
-.btn-primary:disabled,.btn-success:disabled{opacity:.5;cursor:default}
+.btn-archive{background:transparent;border:1px solid #d97706;color:#d97706;padding:8px 18px;border-radius:var(--radius);font-size:.85rem;font-weight:500;cursor:pointer;transition:background .15s;white-space:nowrap}
+.btn-archive:hover{background:#fffbeb}
+.btn-primary:disabled,.btn-success:disabled,.btn-archive:disabled{opacity:.5;cursor:default}
 
 header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
 .header-left{display:flex;align-items:center;gap:12px}
@@ -65,7 +67,28 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 .field{display:flex;flex-direction:column;gap:4px}
 .word-count{font-size:.76rem;color:var(--text2);text-align:right}
 .editor-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.editor-actions .action-group{display:flex;gap:4px}
+.editor-actions .action-group+.action-group{margin-left:4px;padding-left:8px;border-left:1px solid var(--border)}
 .source-display{font-size:.82rem;color:var(--text2);padding:8px 10px;background:var(--bg);border-radius:var(--radius);white-space:pre-line;line-height:1.5;min-height:36px}
+.char-count{font-size:.72rem;font-weight:400;color:var(--text2);text-transform:none;letter-spacing:0}
+.char-count.warn{color:#d97706}
+.char-count.over{color:var(--danger);font-weight:600}
+
+.status-bar{display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 0 4px;margin-bottom:8px}
+.status-step{display:flex;align-items:center;gap:4px;font-size:.74rem;color:var(--text2);padding:4px 10px;border-radius:12px;background:var(--bg);transition:all .2s}
+.status-step.active{background:var(--primary);color:#fff;font-weight:600}
+.status-step.done{background:#d1fae5;color:#065f46;font-weight:600}
+.status-arrow{font-size:.7rem;color:var(--text2)}
+
+.hashtag-suggestions{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.tag-suggestion{padding:3px 10px;border-radius:12px;border:1px solid var(--border);font-size:.74rem;cursor:pointer;color:var(--text2);transition:all .12s;background:#fff}
+.tag-suggestion:hover{border-color:var(--primary);color:var(--primary);background:#f8faff}
+.tag-suggestion.used{border-color:var(--success);color:var(--success);background:#f0fdf4}
+
+.save-indicator{font-size:.78rem;color:var(--text2);padding:6px 8px;background:var(--bg);border-radius:var(--radius);text-align:center}
+.save-indicator.saving{color:#d97706}
+.save-indicator.saved{color:var(--success)}
+.save-indicator.error{color:var(--danger)}
 select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.82rem;font-family:inherit;outline:none;background:#fff;cursor:pointer}
 select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,86,219,.1)}
 .key-status{font-size:.74rem;padding:4px 0;text-align:center}
@@ -85,5 +108,9 @@ select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,86,219,.1)
 .news-item .src{font-size:.74rem;color:var(--text2)}
 .news-item .sum{font-size:.8rem;color:var(--text2);margin-top:4px}
 
+.pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+.pagination .page-info{font-size:.82rem;color:var(--text2);min-width:100px;text-align:center}
+.article-card .num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--bg);font-size:.72rem;font-weight:600;color:var(--text2);flex-shrink:0}
+.article-card-top{gap:8px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 22px;border-radius:var(--radius);font-size:.84rem;z-index:200;animation:fadein .2s;white-space:nowrap}
 @keyframes fadein{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
