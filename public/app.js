@@ -23,6 +23,7 @@ const btnNew = $('btn-new'), btnLogout = $('btn-logout')
 const btnArchive = $('btn-archive'), btnRestore = $('btn-restore')
 const btnPrev = $('btn-prev'), btnNext = $('btn-next'), pageInfo = $('page-info')
 const newsModal = $('news-modal'), modalClose = $('modal-close'), btnAiPick = $('btn-ai-pick')
+const customPrompt = $('custom-prompt'), btnCustomGenerate = $('btn-custom-generate')
 const regenBox = $('regen-box'), regenFeedback = $('regen-feedback')
 const wordCount = $('word-count'), editorStatus = $('editor-status'), editorTitle = $('editor-title')
 const articleList = $('article-list'), statusBar = $('status-bar')
@@ -557,6 +558,8 @@ btnRegenGo.addEventListener('click', async () => {
 // NEW ARTICLE
 btnNew.addEventListener('click', async () => {
   newsModal.classList.remove('hidden')
+  customPrompt.value = ''
+  customPrompt.focus()
   $('news-list').innerHTML = '<div class="empty">Recherche des actualités en cours...</div>'
   currentNews = null
   try {
@@ -579,6 +582,36 @@ btnNew.addEventListener('click', async () => {
       })
     })
   } catch (err) { $('news-list').innerHTML = '<div class="empty">Erreur: ' + esc(err.message) + '</div>' }
+})
+
+btnCustomGenerate.addEventListener('click', async () => {
+  const sujet = customPrompt.value.trim()
+  if (!sujet || sujet.length < 3) { toast('Indique un sujet (min. 3 caractères)'); return }
+  btnCustomGenerate.disabled = true
+  btnCustomGenerate.textContent = 'Génération...'
+  try {
+    const data = await api('/generate', {
+      method: 'POST',
+      body: JSON.stringify({ customPrompt: sujet, feedback: '', provider: aiProvider.value, model: getSelectedModel() }),
+    })
+    const art = data.article
+    showEditor(null)
+    editTitre.value = art.titre_interne || sujet
+    editCorps.value = `Accroche A :\n${art.accroche_a || ''}\n\nAccroche B :\n${art.accroche_b || ''}\n\n${art.corps || ''}`
+    editHashtags.value = (art.hashtags || []).join(' ')
+    updateWords()
+    updateCharCount()
+    renderHashtagSuggestions()
+    currentNews = null
+    customPrompt.value = ''
+    newsModal.classList.add('hidden')
+    toast('Article généré !')
+  } catch (err) { toast('Erreur: ' + err.message) }
+  finally { btnCustomGenerate.disabled = false; btnCustomGenerate.textContent = 'Générer' }
+})
+
+customPrompt.addEventListener('keydown', e => {
+  if (e.key === 'Enter') btnCustomGenerate.click()
 })
 
 btnAiPick.addEventListener('click', async () => {

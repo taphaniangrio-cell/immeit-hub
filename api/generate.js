@@ -6,13 +6,17 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { news, feedback, provider, model } = req.body;
+    const { news, feedback, provider, model, customPrompt } = req.body;
 
-    if (!news || !news.titre) {
-      return res.status(400).json({ error: 'Actualité source requise' });
+    if (!customPrompt && (!news || !news.titre)) {
+      return res.status(400).json({ error: 'Actualité source ou sujet libre requis' });
     }
 
-    const article = await generateArticle(news, feedback || '', provider || 'groq', model || null);
+    if (customPrompt && customPrompt.trim().length < 3) {
+      return res.status(400).json({ error: 'Sujet trop court (min. 3 caractères)' });
+    }
+
+    const article = await generateArticle(news, feedback || '', provider || 'groq', model || null, customPrompt || null);
     return res.status(200).json({ article });
   } catch (err) {
     if (err.message === 'QUOTA') {

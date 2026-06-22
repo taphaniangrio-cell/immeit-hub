@@ -2,6 +2,9 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
+
+const _require = createRequire(import.meta.url);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -13,6 +16,7 @@ const MIME = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
   '.ico': 'image/x-icon',
 };
 
@@ -62,8 +66,8 @@ http.createServer(async (req, res) => {
       try { req.body = JSON.parse(body); } catch { req.body = {}; }
     }
 
-    const handlerFileURL = pathToFileURL(handlerFile).href;
-    const handler = (await import(handlerFileURL)).default;
+    delete _require.cache[_require.resolve(handlerFile)];
+    const handler = _require(handlerFile);
     const mockRes = {
       status(code) { this.statusCode = code; return this; },
       json(data) {

@@ -130,13 +130,27 @@
   <div id="news-modal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Choisir une actualité source</h2>
+        <h2>Nouvel article</h2>
         <div class="modal-header-actions">
-          <button id="btn-ai-pick" class="btn-outline">Laisser l'IA choisir</button>
           <button id="modal-close" class="btn-outline">&times;</button>
         </div>
       </div>
-      <div class="modal-body" id="news-list"><div class="empty">Recherche des actualités...</div></div>
+      <div class="modal-body">
+        <div class="custom-prompt-section">
+          <label for="custom-prompt">Écris un sujet libre (mot-clé, titre, phrase)</label>
+          <div class="custom-prompt-row">
+            <input type="text" id="custom-prompt" placeholder="Ex: maintenance predictive GMAO, fiabilite pompes industrielles...">
+            <button id="btn-custom-generate" class="btn-primary">Générer</button>
+          </div>
+          <div class="custom-prompt-divider">
+            <span>— ou choisis une actualité —</span>
+          </div>
+        </div>
+        <div id="news-list"><div class="empty">Recherche des actualités...</div></div>
+        <div class="modal-ai-pick">
+          <button id="btn-ai-pick" class="btn-outline">🎲 Laisser l'IA choisir</button>
+        </div>
+      </div>
     </div>
   </div>
 

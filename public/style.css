@@ -161,6 +161,14 @@ select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)
 .modal-header h2{font-size:1.05rem;font-weight:700}
 .modal-header-actions{display:flex;gap:8px}
 .modal-body{padding:14px 22px;overflow-y:auto;flex:1}
+.custom-prompt-section{margin-bottom:14px}
+.custom-prompt-section label{font-size:.72rem}
+.custom-prompt-row{display:flex;gap:8px}
+.custom-prompt-row input{flex:1}
+.custom-prompt-row .btn-primary{flex-shrink:0;padding:9px 18px}
+.custom-prompt-divider{display:flex;align-items:center;gap:12px;margin:14px 0;color:var(--text3);font-size:.75rem}
+.custom-prompt-divider::before,.custom-prompt-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.modal-ai-pick{text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .news-item{padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:all .15s}
 .news-item:hover{border-color:var(--primary-light);background:var(--primary-bg)}
 .news-item.selected{border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
