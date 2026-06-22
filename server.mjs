@@ -1,7 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const _require = createRequire(import.meta.url);
@@ -20,7 +20,6 @@ const MIME = {
   '.ico': 'image/x-icon',
 };
 
-// Charge les variables d'environnement depuis .env si présent
 try {
   const envPath = path.join(__dirname, '.env');
   if (fs.existsSync(envPath)) {
@@ -37,11 +36,14 @@ try {
   }
 } catch {}
 
-http.createServer(async (req, res) => {
+const server = http.createServer();
+
+server.setTimeout(25000);
+
+server.on('request', async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const { pathname } = url;
 
-  // Route API
   if (pathname.startsWith('/api/')) {
     const apiPath = pathname.replace('/api/', '');
     const segments = apiPath.split('/');
@@ -56,7 +58,6 @@ http.createServer(async (req, res) => {
     const query = Object.fromEntries(url.searchParams);
     req.query = query;
 
-    // Parse body pour POST/PUT
     let body = '';
     if (req.method === 'POST' || req.method === 'PUT') {
       await new Promise(resolve => {
@@ -68,34 +69,29 @@ http.createServer(async (req, res) => {
 
     delete _require.cache[_require.resolve(handlerFile)];
     const handler = _require(handlerFile);
-    const mockRes = {
-      status(code) { this.statusCode = code; return this; },
-      json(data) {
-        res.writeHead(this.statusCode || 200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(data));
-      },
-      setHeader: (k, v) => res.setHeader(k, v),
-    };
 
     try {
       await handler(req, {
-        ...mockRes,
         status(code) { this.statusCode = code; return this; },
+        json(data) {
+          res.writeHead(this.statusCode || 200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(data));
+        },
+        setHeader: (k, v) => res.setHeader(k, v),
       });
     } catch (err) {
+      console.error(`[API ERROR] ${req.method} ${pathname}:`, err);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
     return;
   }
 
-  // Fichiers statiques depuis /public
   let filePath = path.join(__dirname, 'public', pathname === '/' ? 'index.html' : pathname);
   const ext = path.extname(filePath);
 
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      // Fallback sur index.html (SPA-like)
       fs.readFile(path.join(__dirname, 'public', 'index.html'), (err2, data2) => {
         if (err2) {
           res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -110,7 +106,9 @@ http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
     res.end(data);
   });
-}).listen(PORT, () => {
+});
+
+server.listen(PORT, () => {
   console.log(`> Serveur de développement: http://localhost:${PORT}`);
   console.log(`> API: http://localhost:${PORT}/api/`);
 });

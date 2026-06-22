@@ -53,6 +53,7 @@ module.exports = async (req, res) => {
       models[key] = {
         label: config.label,
         enabled: !!keyValue,
+        needsKey: config.needsKey,
         models: config.models,
         default: config.default,
       };

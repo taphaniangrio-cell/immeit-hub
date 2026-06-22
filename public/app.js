@@ -97,7 +97,7 @@ function populateAiSelector() {
   if (!availableModels) return
   const settings = loadAiSettings()
   aiProvider.innerHTML = Object.entries(availableModels)
-    .map(([key, val]) => `<option value="${key}"${key === settings.provider ? ' selected' : ''}>${val.label}${!val.enabled ? ' (non configuré)' : ''}</option>`)
+    .map(([key, val]) => `<option value="${key}"${key === settings.provider ? ' selected' : ''}>${val.label}${!val.enabled ? ` (${val.needsKey || 'clé'} manquante)` : ''}</option>`)
     .join('')
   updateModelList()
 }
@@ -118,7 +118,7 @@ function updateModelList() {
     aiKeyStatus.textContent = '✓ Clé configurée'
     aiKeyStatus.className = 'key-ok'
   } else {
-    aiKeyStatus.textContent = `⚠ Clé ${provData.needsKey || 'manquante'}`
+    aiKeyStatus.textContent = `⚠ ${provData.needsKey || 'Clé'} manquante`
     aiKeyStatus.className = 'key-missing'
   }
   saveAiSettings(prov, aiModel.value)
@@ -163,6 +163,7 @@ function showMain() {
   editorScreen.classList.add('hidden')
   mainScreen.classList.remove('hidden')
   currentPage = 1
+  loadAvailableModels()
   loadArticles()
 }
 
@@ -280,8 +281,9 @@ async function autoSave() {
     })
     isDirty = false
     setSaveStatus('✓ Sauvegardé', 'saved')
-  } catch {
-    setSaveStatus('✗ Erreur sauvegarde', 'error')
+  } catch (e) {
+    console.error('Auto-save error:', e)
+    setSaveStatus('✗ ' + (e.message || 'Erreur sauvegarde'), 'error')
   }
 }
 
