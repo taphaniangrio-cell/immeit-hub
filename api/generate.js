@@ -22,7 +22,12 @@ module.exports = async (req, res) => {
     const article = await generateArticle(news, feedback || '', resolvedProvider, resolvedModel, customPrompt || null);
     return res.status(200).json({
       article,
-      ia: { provider: resolvedProvider, model: resolvedModel || (article._modelUsed || null), generation_type: generationType }
+      ia: {
+        provider: resolvedProvider,
+        model: resolvedModel || (article._modelUsed || null),
+        generation_type: generationType,
+        custom_subject: customPrompt || null,
+      }
     });
   } catch (err) {
     if (err.message === 'QUOTA') {

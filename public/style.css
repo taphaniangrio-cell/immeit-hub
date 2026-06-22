@@ -88,8 +88,9 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 .article-card:hover{border-color:var(--primary-light);box-shadow:var(--shadow-hover);transform:translateY(-2px)}
 .article-card-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
 .article-card h3{font-size:.92rem;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
-.article-card .meta{display:flex;gap:12px;font-size:.76rem;color:var(--text3);margin-top:4px}
+.article-card .meta{display:flex;gap:12px;font-size:.76rem;color:var(--text3);margin-top:4px;flex-wrap:wrap}
 .article-card .meta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ia-badge{font-size:.7rem;background:var(--primary-bg);color:var(--primary);padding:1px 8px;border-radius:4px;font-weight:500;white-space:nowrap}
 
 .article-card .num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--bg);font-size:.72rem;font-weight:700;color:var(--text3);flex-shrink:0}
 .article-card .num:nth-child(1){background:var(--primary-bg);color:var(--primary)}

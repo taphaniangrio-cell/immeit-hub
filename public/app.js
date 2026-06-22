@@ -182,7 +182,7 @@ function showEditor(article) {
     editorStatus.className = 'badge ' + statusClass(article.statut)
     editSource.textContent = article.source_news_titre ? esc(article.source_news_titre) : '—'
     editIaInfo.textContent = article.ia_provider
-      ? `${article.ia_provider} / ${article.ia_model || '—'} · ${article.generation_type === 'custom' ? 'Sujet libre' : 'Actualité'}`
+      ? `${article.ia_provider} / ${article.ia_model || '—'} · ${article.generation_type === 'custom' ? 'sujet: ' + (article.custom_subject || '') : 'actualité: ' + (article.source_news_titre || '')}`
       : '—'
     editDates.textContent = [
       article.date_creation ? 'Créé: ' + fmtDate(article.date_creation) : '',
@@ -201,7 +201,7 @@ function showEditor(article) {
     editHashtags.value = ''
     editSource.textContent = currentNews ? esc(currentNews.titre) : '—'
     editIaInfo.textContent = currentIaMeta
-      ? `${currentIaMeta.provider} / ${currentIaMeta.model || '—'} · ${currentIaMeta.generation_type === 'custom' ? 'Sujet libre' : 'Actualité'}`
+      ? `${currentIaMeta.provider} / ${currentIaMeta.model || '—'} · ${currentIaMeta.generation_type === 'custom' ? 'sujet: ' + (currentIaMeta.custom_subject || '') : 'actualité: ' + (currentNews?.titre || '')}`
       : '—'
     editDates.textContent = '—'
     editorStatus.textContent = 'brouillon'
@@ -329,7 +329,7 @@ function renderArticles() {
       </div>
       <div class="meta">
         <span>${fmtDate(a.date_creation)}</span>
-        ${a.source_news_titre ? `<span>${esc(a.source_news_titre.slice(0, 50))}</span>` : ''}
+        ${a.ia_provider ? `<span class="ia-badge">${esc(a.ia_provider)} / ${esc(a.ia_model || '—')} · ${a.generation_type === 'custom' ? 'sujet: ' + esc(a.custom_subject || '') : 'actualité: ' + esc(a.source_news_titre || '').slice(0, 40)}</span>` : ''}
       </div>
     </div>`).join('')
 
@@ -419,6 +419,7 @@ btnSave.addEventListener('click', async () => {
         ia_provider: currentIaMeta?.provider || null,
         ia_model: currentIaMeta?.model || null,
         generation_type: currentIaMeta?.generation_type || null,
+        custom_subject: currentIaMeta?.custom_subject || null,
       }
       const result = await api('/articles', { method: 'POST', body: JSON.stringify(articleData) })
       editingId = result.article.id

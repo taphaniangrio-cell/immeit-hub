@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS articles (
   ia_provider TEXT,
   ia_model TEXT,
   generation_type TEXT CHECK (generation_type IN ('news', 'custom')),
+  custom_subject TEXT,
   statut TEXT NOT NULL DEFAULT 'brouillon',
   date_creation TIMESTAMP WITH TIME ZONE DEFAULT now(),
   date_validation TIMESTAMP WITH TIME ZONE,
@@ -25,3 +26,4 @@ CREATE INDEX IF NOT EXISTS idx_articles_date_creation ON articles(date_creation 
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS ia_provider TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS ia_model TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS generation_type TEXT;
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS custom_subject TEXT;
