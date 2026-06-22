@@ -5,7 +5,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .screen{max-width:960px;margin:0 auto;padding:24px 20px;animation:fadeIn .25s ease}
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
 .card{background:var(--card);padding:40px;border-radius:var(--radius);box-shadow:var(--shadow);width:100%;max-width:420px;margin:100px auto;text-align:center}
@@ -119,8 +119,7 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 .word-count{font-size:.76rem;color:var(--text3);text-align:right;margin-top:2px}
 
 .editor-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:16px;border-top:1.5px solid var(--border)}
-.editor-actions .action-group{display:flex;gap:4px}
-.editor-actions .action-group+.action-group{margin-left:6px;padding-left:10px;border-left:1.5px solid var(--border)}
+
 
 .source-display{font-size:.82rem;color:var(--text2);padding:10px 12px;background:var(--bg);border-radius:8px;white-space:pre-line;line-height:1.6;min-height:38px}
 
@@ -193,6 +192,5 @@ select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)
   .ai-selector-inline select{max-width:48%;font-size:.7rem}
   .btn-logout{font-size:.72rem;padding:3px 4px}
   .editor-actions{gap:6px}
-  .editor-actions .action-group+.action-group{margin-left:0;padding-left:0;border-left:none}
   .pagination{gap:8px;flex-wrap:wrap}
 }

@@ -20,7 +20,6 @@ articles-immeit/
 │   ├── app.js
 │   └── style.css
 ├── lib/
-│   ├── claude-client.js   # client Anthropic Claude
 │   ├── company-context.md  # contexte IMMEIT injecté dans le prompt
 │   ├── db.js               # connexion PostgreSQL (Neon serverless)
 │   └── rss-fetcher.js      # récupération + filtrage RSS
