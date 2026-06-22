@@ -5,6 +5,7 @@ let filter = ''
 let editingId = null
 let currentNews = null
 let regenNews = null
+let currentIaMeta = null
 let availableModels = null
 let currentPage = 1
 let isDirty = false
@@ -16,7 +17,7 @@ const $ = id => document.getElementById(id)
 const loginScreen = $('login-screen'), mainScreen = $('main-screen'), editorScreen = $('editor-screen')
 const loginForm = $('login-form'), loginPassword = $('login-password'), loginError = $('login-error')
 const editTitre = $('edit-titre'), editCorps = $('edit-corps'), editHashtags = $('edit-hashtags')
-const editSource = $('edit-source'), editDates = $('edit-dates')
+const editSource = $('edit-source'), editIaInfo = $('edit-ia-info'), editDates = $('edit-dates')
 const btnBack = $('btn-back'), btnSave = $('btn-save'), btnValidate = $('btn-validate')
 const btnCopy = $('btn-copy'), btnDelete = $('btn-delete'), btnRegen = $('btn-regen'), btnRegenGo = $('btn-regen-go')
 const btnNew = $('btn-new'), btnLogout = $('btn-logout')
@@ -180,6 +181,9 @@ function showEditor(article) {
     editorStatus.textContent = article.statut
     editorStatus.className = 'badge ' + statusClass(article.statut)
     editSource.textContent = article.source_news_titre ? esc(article.source_news_titre) : '—'
+    editIaInfo.textContent = article.ia_provider
+      ? `${article.ia_provider} / ${article.ia_model || '—'} · ${article.generation_type === 'custom' ? 'Sujet libre' : 'Actualité'}`
+      : '—'
     editDates.textContent = [
       article.date_creation ? 'Créé: ' + fmtDate(article.date_creation) : '',
       article.date_validation ? 'Validé: ' + fmtDate(article.date_validation) : '',
@@ -196,6 +200,9 @@ function showEditor(article) {
     editCorps.value = ''
     editHashtags.value = ''
     editSource.textContent = currentNews ? esc(currentNews.titre) : '—'
+    editIaInfo.textContent = currentIaMeta
+      ? `${currentIaMeta.provider} / ${currentIaMeta.model || '—'} · ${currentIaMeta.generation_type === 'custom' ? 'Sujet libre' : 'Actualité'}`
+      : '—'
     editDates.textContent = '—'
     editorStatus.textContent = 'brouillon'
     editorStatus.className = 'badge s-brouillon'
@@ -409,6 +416,9 @@ btnSave.addEventListener('click', async () => {
         source_news_titre: currentNews?.titre || null,
         source_news_url: currentNews?.url || null,
         source_news_source: currentNews?.source || null,
+        ia_provider: currentIaMeta?.provider || null,
+        ia_model: currentIaMeta?.model || null,
+        generation_type: currentIaMeta?.generation_type || null,
       }
       const result = await api('/articles', { method: 'POST', body: JSON.stringify(articleData) })
       editingId = result.article.id
@@ -531,6 +541,7 @@ btnRegenGo.addEventListener('click', async () => {
       method: 'POST',
       body: JSON.stringify({ news, feedback, provider: aiProvider.value, model: getSelectedModel() }),
     })
+    currentIaMeta = data.ia
     const art = data.article
     editTitre.value = art.titre_interne || ''
     editCorps.value = `Accroche A :\n${art.accroche_a || ''}\n\nAccroche B :\n${art.accroche_b || ''}\n\n${art.corps || ''}`
@@ -541,7 +552,7 @@ btnRegenGo.addEventListener('click', async () => {
     if (editingId) {
       await api(`/articles?id=${editingId}`, {
         method: 'PUT',
-        body: JSON.stringify({ titre_interne: art.titre_interne, corps: editCorps.value, hashtags: art.hashtags || [], statut: 'brouillon' }),
+        body: JSON.stringify({ titre_interne: art.titre_interne, corps: editCorps.value, hashtags: art.hashtags || [], ia_provider: currentIaMeta.provider, ia_model: currentIaMeta.model, generation_type: currentIaMeta.generation_type, statut: 'brouillon' }),
       })
       editorStatus.textContent = 'brouillon'
       editorStatus.className = 'badge s-brouillon'
@@ -594,6 +605,7 @@ btnCustomGenerate.addEventListener('click', async () => {
       method: 'POST',
       body: JSON.stringify({ customPrompt: sujet, feedback: '', provider: aiProvider.value, model: getSelectedModel() }),
     })
+    currentIaMeta = data.ia
     const art = data.article
     showEditor(null)
     editTitre.value = art.titre_interne || sujet
@@ -633,6 +645,7 @@ async function generateFromNews(news) {
       method: 'POST',
       body: JSON.stringify({ news, feedback: '', provider: aiProvider.value, model: getSelectedModel() }),
     })
+    currentIaMeta = data.ia
     const art = data.article
     showEditor(null)
     editTitre.value = art.titre_interne || ''

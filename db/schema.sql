@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS articles (
   source_news_titre TEXT,
   source_news_url TEXT,
   source_news_source TEXT,
+  ia_provider TEXT,
+  ia_model TEXT,
+  generation_type TEXT CHECK (generation_type IN ('news', 'custom')),
   statut TEXT NOT NULL DEFAULT 'brouillon',
   date_creation TIMESTAMP WITH TIME ZONE DEFAULT now(),
   date_validation TIMESTAMP WITH TIME ZONE,
@@ -17,3 +20,8 @@ CREATE TABLE IF NOT EXISTS articles (
 
 CREATE INDEX IF NOT EXISTS idx_articles_statut ON articles(statut);
 CREATE INDEX IF NOT EXISTS idx_articles_date_creation ON articles(date_creation DESC);
+
+-- Migration for existing databases (safe to run multiple times)
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS ia_provider TEXT;
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS ia_model TEXT;
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS generation_type TEXT;

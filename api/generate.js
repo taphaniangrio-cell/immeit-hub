@@ -16,8 +16,14 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Sujet trop court (min. 3 caractères)' });
     }
 
-    const article = await generateArticle(news, feedback || '', provider || 'groq', model || null, customPrompt || null);
-    return res.status(200).json({ article });
+    const resolvedProvider = provider || 'groq';
+    const resolvedModel = model || null;
+    const generationType = customPrompt ? 'custom' : 'news';
+    const article = await generateArticle(news, feedback || '', resolvedProvider, resolvedModel, customPrompt || null);
+    return res.status(200).json({
+      article,
+      ia: { provider: resolvedProvider, model: resolvedModel || (article._modelUsed || null), generation_type: generationType }
+    });
   } catch (err) {
     if (err.message === 'QUOTA') {
       return res.status(429).json({ error: 'Quota API dépassé. Réessaie plus tard ou change de fournisseur.' });
