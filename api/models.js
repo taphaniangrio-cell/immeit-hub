@@ -41,7 +41,7 @@ const PROVIDERS_CONFIG = {
       { id: 'mistral-small-latest', label: 'Mistral Small', free: true },
       { id: 'codestral-latest', label: 'Codestral', free: true },
     ],
-    default: 'mistral-large-latest',
+    default: 'mistral-small-latest',
   },
 };
 
