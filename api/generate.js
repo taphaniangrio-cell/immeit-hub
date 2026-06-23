@@ -1,5 +1,5 @@
 const { generateArticle } = require('../lib/ai-client');
-const { findImageForArticle } = require('../lib/image-fetcher');
+const { findImagesForArticle } = require('../lib/image-fetcher');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -22,14 +22,16 @@ module.exports = async (req, res) => {
     const generationType = customPrompt ? 'custom' : 'news';
     const article = await generateArticle(news, feedback || '', resolvedProvider, resolvedModel, customPrompt || null);
 
-    const image = await findImageForArticle({
+    const images = await findImagesForArticle({
       titre_interne: article.titre_interne,
       hashtags: article.hashtags,
       corps: article.corps,
     });
 
+    const primary = images[0] || null;
+
     return res.status(200).json({
-      article: { ...article, image_url: image?.url || null, image_photographer: image?.photographer || null, image_photographer_url: image?.photographer_url || null },
+      article: { ...article, image_url: primary?.url || null, image_photographer: primary?.photographer || null, image_photographer_url: primary?.photographer_url || null, image_options: images },
       ia: {
         provider: resolvedProvider,
         model: resolvedModel || (article._modelUsed || null),

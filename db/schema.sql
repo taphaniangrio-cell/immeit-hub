@@ -30,3 +30,4 @@ ALTER TABLE articles ADD COLUMN IF NOT EXISTS custom_subject TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_url TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_photographer TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_photographer_url TEXT;
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_options TEXT;

@@ -88,13 +88,46 @@ function saveAiSettings(provider, model) {
   if (model) localStorage.setItem(`immeit_ai_model_${provider}`, model)
 }
 
-function showArticleImage(url, photographer, photographerUrl) {
+let currentImageOptions = []
+let currentImageUrl = null
+let currentImagePhotographer = null
+let currentImagePhotographerUrl = null
+
+function showArticleImage(url, photographer, photographerUrl, options) {
+  currentImageOptions = options || []
+  currentImageUrl = url
+  currentImagePhotographer = photographer
+  currentImagePhotographerUrl = photographerUrl
   const el = editImage
-  if (!url) { el.innerHTML = '—'; return }
+  if (!url) { el.innerHTML = '—'; $('image-gallery').classList.add('hidden'); return }
   el.innerHTML = `<div class="image-preview">
     <img src="${esc(url)}" alt="Illustration" loading="lazy" onerror="this.parentElement.innerHTML='—'">
     ${photographer ? `<a href="${esc(photographerUrl || '#')}" target="_blank" rel="noopener" class="image-credit">📷 ${esc(photographer)}</a>` : ''}
   </div>`
+  renderImageGallery(url, options)
+}
+
+function renderImageGallery(selectedUrl, options) {
+  const gallery = $('image-gallery')
+  if (!options || options.length < 2) { gallery.classList.add('hidden'); return }
+  gallery.classList.remove('hidden')
+  gallery.innerHTML = options.map((opt, i) => {
+    const active = opt.url === selectedUrl ? ' active' : ''
+    const idx = i + 1
+    return `<div class="gallery-thumb${active}" data-url="${esc(opt.url)}" data-photographer="${esc(opt.photographer || '')}" data-photographer-url="${esc(opt.photographer_url || '')}">
+      <img src="${esc(opt.thumbnail || opt.url)}" alt="Option ${idx}" loading="lazy">
+      <span class="gallery-idx">${idx}</span>
+    </div>`
+  }).join('')
+  gallery.querySelectorAll('.gallery-thumb').forEach(el => {
+    el.addEventListener('click', () => {
+      const url = el.dataset.url
+      const photographer = el.dataset.photographer
+      const photographerUrl = el.dataset.photographerUrl
+      showArticleImage(url, photographer, photographerUrl, options)
+      markDirty()
+    })
+  })
 }
 
 async function loadAvailableModels() {
@@ -194,7 +227,7 @@ function showEditor(article) {
     editorStatus.textContent = article.statut
     editorStatus.className = 'badge ' + statusClass(article.statut)
     editSource.textContent = article.source_news_titre ? esc(article.source_news_titre) : '—'
-    showArticleImage(article.image_url, article.image_photographer, article.image_photographer_url)
+    showArticleImage(article.image_url, article.image_photographer, article.image_photographer_url, article.image_options)
     editIaInfo.textContent = article.ia_provider
       ? `${article.ia_provider} / ${article.ia_model || '—'} · ${article.generation_type === 'custom' ? 'sujet: ' + (article.custom_subject || '') : 'actualité: ' + (article.source_news_titre || '')}`
       : '—'
@@ -290,6 +323,10 @@ async function autoSave() {
         titre_interne: editTitre.value,
         corps: editCorps.value,
         hashtags: editHashtags.value.split(/\s+/).filter(h => h),
+        image_url: currentImageUrl,
+        image_photographer: currentImagePhotographer,
+        image_photographer_url: currentImagePhotographerUrl,
+        image_options: currentImageOptions.length ? currentImageOptions : null,
       }),
     })
     isDirty = false
@@ -418,6 +455,10 @@ btnSave.addEventListener('click', async () => {
     titre_interne: editTitre.value,
     corps: editCorps.value,
     hashtags: editHashtags.value.split(/\s+/).filter(h => h),
+    image_url: currentImageUrl,
+    image_photographer: currentImagePhotographer,
+    image_photographer_url: currentImagePhotographerUrl,
+    image_options: currentImageOptions.length ? currentImageOptions : null,
   }
   try {
     if (editingId) {
@@ -562,14 +603,14 @@ btnRegenGo.addEventListener('click', async () => {
     editTitre.value = art.titre_interne || ''
     editCorps.value = `Accroche A :\n${art.accroche_a || ''}\n\nAccroche B :\n${art.accroche_b || ''}\n\n${art.corps || ''}`
     editHashtags.value = (art.hashtags || []).join(' ')
-    showArticleImage(art.image_url, art.image_photographer, art.image_photographer_url)
+    showArticleImage(art.image_url, art.image_photographer, art.image_photographer_url, art.image_options)
     updateWords()
     updateCharCount()
     renderHashtagSuggestions()
     if (editingId) {
       await api(`/articles?id=${editingId}`, {
         method: 'PUT',
-        body: JSON.stringify({ titre_interne: art.titre_interne, corps: editCorps.value, hashtags: art.hashtags || [], image_url: art.image_url || null, image_photographer: art.image_photographer || null, image_photographer_url: art.image_photographer_url || null, ia_provider: currentIaMeta.provider, ia_model: currentIaMeta.model, generation_type: currentIaMeta.generation_type, statut: 'brouillon' }),
+        body: JSON.stringify({ titre_interne: art.titre_interne, corps: editCorps.value, hashtags: art.hashtags || [], image_url: art.image_url || null, image_photographer: art.image_photographer || null, image_photographer_url: art.image_photographer_url || null, image_options: art.image_options || null, ia_provider: currentIaMeta.provider, ia_model: currentIaMeta.model, generation_type: currentIaMeta.generation_type, statut: 'brouillon' }),
       })
       editorStatus.textContent = 'brouillon'
       editorStatus.className = 'badge s-brouillon'
@@ -643,7 +684,7 @@ btnCustomGenerate.addEventListener('click', async () => {
     editTitre.value = art.titre_interne || sujet
     editCorps.value = `Accroche A :\n${art.accroche_a || ''}\n\nAccroche B :\n${art.accroche_b || ''}\n\n${art.corps || ''}`
     editHashtags.value = (art.hashtags || []).join(' ')
-    showArticleImage(art.image_url, art.image_photographer, art.image_photographer_url)
+    showArticleImage(art.image_url, art.image_photographer, art.image_photographer_url, art.image_options)
     updateWords()
     updateCharCount()
     renderHashtagSuggestions()
@@ -689,7 +730,7 @@ async function generateFromNews(news) {
     editTitre.value = art.titre_interne || ''
     editCorps.value = `Accroche A :\n${art.accroche_a || ''}\n\nAccroche B :\n${art.accroche_b || ''}\n\n${art.corps || ''}`
     editHashtags.value = (art.hashtags || []).join(' ')
-    showArticleImage(art.image_url, art.image_photographer, art.image_photographer_url)
+    showArticleImage(art.image_url, art.image_photographer, art.image_photographer_url, art.image_options)
     updateWords()
     updateCharCount()
     renderHashtagSuggestions()
