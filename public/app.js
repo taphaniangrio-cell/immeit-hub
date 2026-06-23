@@ -10,6 +10,7 @@ let availableModels = null
 let currentPage = 1
 let isDirty = false
 let autoSaveTimer = null
+let isGenerating = false
 const PAGE_SIZE = 10
 
 const $ = id => document.getElementById(id)
@@ -602,6 +603,7 @@ btnNew.addEventListener('click', async () => {
     ).join('')
     $('news-list').querySelectorAll('.news-item').forEach(el => {
       el.addEventListener('click', () => {
+        if (isGenerating) return
         $('news-list').querySelectorAll('.news-item').forEach(n => n.classList.remove('selected'))
         el.classList.add('selected')
         currentNews = items[parseInt(el.dataset.idx)]
@@ -611,11 +613,25 @@ btnNew.addEventListener('click', async () => {
   } catch (err) { $('news-list').innerHTML = '<div class="empty">Erreur: ' + esc(err.message) + '</div>' }
 })
 
+function setGenerating(loading) {
+  isGenerating = loading
+  const overlay = $('modal-loading')
+  if (loading) {
+    overlay.classList.remove('hidden')
+    btnCustomGenerate.disabled = true
+    btnCustomGenerate.textContent = 'Génération...'
+  } else {
+    overlay.classList.add('hidden')
+    btnCustomGenerate.disabled = false
+    btnCustomGenerate.textContent = 'Générer'
+  }
+}
+
 btnCustomGenerate.addEventListener('click', async () => {
+  if (isGenerating) return
   const sujet = customPrompt.value.trim()
   if (!sujet || sujet.length < 3) { toast('Indique un sujet (min. 3 caractères)'); return }
-  btnCustomGenerate.disabled = true
-  btnCustomGenerate.textContent = 'Génération...'
+  setGenerating(true)
   try {
     const data = await api('/generate', {
       method: 'POST',
@@ -636,7 +652,7 @@ btnCustomGenerate.addEventListener('click', async () => {
     newsModal.classList.add('hidden')
     toast('Article généré !')
   } catch (err) { toast('Erreur: ' + err.message) }
-  finally { btnCustomGenerate.disabled = false; btnCustomGenerate.textContent = 'Générer' }
+  finally { setGenerating(false) }
 })
 
 customPrompt.addEventListener('keydown', e => {
@@ -644,6 +660,7 @@ customPrompt.addEventListener('keydown', e => {
 })
 
 btnAiPick.addEventListener('click', async () => {
+  if (isGenerating) return
   try {
     const data = await api('/news')
     const items = data.news || []
@@ -653,10 +670,14 @@ btnAiPick.addEventListener('click', async () => {
   } catch (err) { toast('Erreur: ' + err.message) }
 })
 
-modalClose.addEventListener('click', () => newsModal.classList.add('hidden'))
+modalClose.addEventListener('click', () => {
+  if (isGenerating) return
+  newsModal.classList.add('hidden')
+})
 
 async function generateFromNews(news) {
-  $('news-list').innerHTML = '<div class="empty">Génération de l\'article...</div>'
+  if (isGenerating) return
+  setGenerating(true)
   try {
     const data = await api('/generate', {
       method: 'POST',
@@ -675,7 +696,8 @@ async function generateFromNews(news) {
     currentNews = news
     newsModal.classList.add('hidden')
     toast('Article généré !')
-  } catch (err) { $('news-list').innerHTML = '<div class="empty">Erreur: ' + esc(err.message) + '</div>' }
+  } catch (err) { toast('Erreur: ' + err.message) }
+  finally { setGenerating(false) }
 }
 
 // INIT
