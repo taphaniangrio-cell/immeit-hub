@@ -349,6 +349,7 @@ function showLogin() {
 
 function showMain() {
   appContainer.classList.remove('hidden')
+  appContainer.classList.remove('app--editor')
   loginScreen.classList.add('hidden')
   editorScreen.classList.add('hidden')
   mainScreen.classList.remove('hidden')
@@ -358,6 +359,7 @@ function showMain() {
 }
 
 function showEditor(article) {
+  appContainer.classList.add('app--editor')
   mainScreen.classList.add('hidden')
   editorScreen.classList.remove('hidden')
   editingId = article ? article.id : null

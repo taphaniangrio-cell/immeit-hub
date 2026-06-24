@@ -1037,9 +1037,12 @@ button:disabled {
 /* ── App Grid (3 colonnes) ── */
 .app {
   display: grid;
-  grid-template-columns: 220px 320px 1fr;
+  grid-template-columns: 220px 1fr;
   min-height: 100vh;
   background: var(--clr-bg-page);
+}
+.app--editor {
+  grid-template-columns: 220px 320px 1fr;
 }
 
 /* ── Sidebar (col 1) ── */
