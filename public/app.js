@@ -531,6 +531,10 @@ function loadArticles() {
     articles = data.articles || []
     currentPage = 1
     renderArticles()
+    if (!editingId && articles.length > 0) {
+      showEditor(articles[0])
+      renderArticles()
+    }
   }).catch(() => {
     articleList.innerHTML = '<div class="empty">Erreur de chargement</div>'
   })
@@ -551,8 +555,9 @@ function renderArticles() {
   const start = (currentPage - 1) * PAGE_SIZE
   const page = articles.slice(start, start + PAGE_SIZE)
 
-  articleList.innerHTML = page.map((a, i) => `
-    <div class="article-card" data-id="${a.id}">
+  articleList.innerHTML = page.map((a, i) => {
+    const selected = editingId === a.id ? ' selected' : ''
+    return `<div class="article-card${selected}" data-id="${a.id}">
       <div class="article-card-top">
         <span class="num">${start + i + 1}</span>
         <h3>${esc(a.titre_interne || '(sans titre)')}</h3>
@@ -563,12 +568,13 @@ function renderArticles() {
         ${a.ia_provider ? `<span class="ia-badge">${esc(a.ia_provider)} / ${esc(a.ia_model || '—')} · ${a.generation_type === 'custom' ? 'sujet: ' + esc(a.custom_subject || '').slice(0, 40) : 'actualité: ' + esc(a.source_news_titre || '').slice(0, 40)}</span>` : ''}
       </div>
       ${a.image_url ? `<div class="article-card-img"><img src="${esc(a.image_url)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></div>` : ''}
-    </div>`).join('')
+    </div>`
+  }).join('')
 
   articleList.querySelectorAll('.article-card').forEach(c => {
     c.addEventListener('click', () => {
       const a = articles.find(x => x.id === parseInt(c.dataset.id))
-      if (a) showEditor(a)
+      if (a) { showEditor(a); renderArticles() }
     })
   })
 
@@ -588,6 +594,7 @@ document.querySelectorAll('.tab').forEach(b => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'))
     b.classList.add('active')
     filter = b.dataset.filter
+    editingId = null
     loadArticles()
   })
 })
