@@ -79,6 +79,19 @@
 
   <!-- ÉDITEUR -->
   <main id="editor-screen" class="editor hidden">
+    <div id="editor-placeholder" class="editor__placeholder">
+      <div class="editor__placeholder-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <h3 class="editor__placeholder-title">Sélectionnez un article</h3>
+      <p class="editor__placeholder-text">Choisissez un article dans la liste<br>pour le modifier ou le publier</p>
+    </div>
+    <div id="editor-form" class="editor__form">
     <div class="editor__header">
       <span id="btn-back" class="editor__back-btn">&larr; Retour</span>
       <input type="text" id="edit-titre" class="editor__title-input" placeholder="Titre interne…">
@@ -171,7 +184,7 @@
         <button id="btn-delete" class="btn btn--danger">Supprimer</button>
       </div>
     </div>
-  </main>
+    </div>
 
 </div>
 

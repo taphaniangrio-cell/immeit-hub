@@ -20,6 +20,7 @@ const appContainer = $('app'), loginScreen = $('login-screen'), mainScreen = $('
 const loginForm = $('login-form'), loginPassword = $('login-password'), loginError = $('login-error')
 const editTitre = $('edit-titre'), editCorps = $('edit-corps'), editHashtags = $('edit-hashtags')
 const editSource = $('edit-source'), editIaInfo = $('edit-ia-info'), editDates = $('edit-dates')
+const editorPlaceholder = $('editor-placeholder'), editorForm = $('editor-form')
 const btnBack = $('btn-back'), btnSave = $('btn-save'), btnValidate = $('btn-validate')
 const btnCopy = $('btn-copy'), btnDelete = $('btn-delete'), btnRegen = $('btn-regen'), btnRegenGo = $('btn-regen-go')
 const btnNew = $('btn-new'), btnLogout = $('btn-logout')
@@ -360,25 +361,15 @@ function showMain() {
 
 function resetEditor() {
   editingId = null
-  editorStatus.textContent = 'Sélectionnez un article'
-  editorStatus.className = 'badge s-brouillon'
-  editTitre.value = ''
-  editCorps.value = ''
-  editHashtags.value = ''
-  editSource.textContent = '—'
-  editIaInfo.textContent = '—'
-  editDates.textContent = '—'
-  setArticleImages([], null)
-  updateEditorButtons('brouillon_nouveau')
-  updateStatusBar('brouillon')
-  updateWords()
-  updateCharCount()
-  renderHashtagSuggestions()
-  isDirty = false
-  setSaveStatus('—')
+  editorPlaceholder.classList.remove('hidden')
+  editorForm.classList.add('hidden')
+  currentNews = null
+  currentIaMeta = null
 }
 
 function showEditor(article) {
+  editorPlaceholder.classList.add('hidden')
+  editorForm.classList.remove('hidden')
   editingId = article ? article.id : null
   regenNews = null
 
