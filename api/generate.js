@@ -25,11 +25,11 @@ module.exports = requireAuth(async (req, res) => {
       return res.status(400).json({ error: 'Actualité source ou sujet libre requis' });
     }
 
-    const sanitizedPrompt = customPrompt ? sanitizeInput(customPrompt) : null;
-
-    if (sanitizedPrompt && sanitizedPrompt.length < 3) {
+    if (customPrompt && customPrompt.trim().length < 3) {
       return res.status(400).json({ error: 'Sujet trop court (min. 3 caractères)' });
     }
+
+    const sanitizedPrompt = customPrompt ? sanitizeInput(customPrompt) : null;
 
     const resolvedProvider = provider || 'groq';
     const resolvedModel = model || null;

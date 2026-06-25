@@ -32,6 +32,7 @@ ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_photographer TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_photographer_url TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_options TEXT;
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS versions JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS accroche_active TEXT DEFAULT 'a';
 
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$

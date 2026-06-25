@@ -117,6 +117,34 @@
         </div>
       </div>
 
+      <!-- Accroches -->
+      <div class="field">
+        <label class="accroche-section-label">
+          Accroches
+          <span class="meta-field__label" style="font-weight:400;color:var(--color-text-light)">sélectionnez celle à intégrer dans le post</span>
+        </label>
+        <div class="accroche-cards">
+          <div class="accroche-card" data-value="a" id="accroche-card-a">
+            <input type="radio" name="accroche-active" value="a" class="accroche-radio">
+            <div class="accroche-card-header">
+              <span class="accroche-card-badge accroche-card-badge--a">A</span>
+              <span class="accroche-card-type">Directe / Choc</span>
+              <span class="accroche-card-check">✓</span>
+            </div>
+            <textarea id="edit-accroche-a" class="accroche-card-input" placeholder="Saisissez votre accroche percutante…" rows="2"></textarea>
+          </div>
+          <div class="accroche-card" data-value="b" id="accroche-card-b">
+            <input type="radio" name="accroche-active" value="b" class="accroche-radio">
+            <div class="accroche-card-header">
+              <span class="accroche-card-badge accroche-card-badge--b">B</span>
+              <span class="accroche-card-type">Question / Réflexion</span>
+              <span class="accroche-card-check">✓</span>
+            </div>
+            <textarea id="edit-accroche-b" class="accroche-card-input" placeholder="Saisissez votre accroche réflexive…" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
       <!-- Corps -->
       <div class="field">
         <label>Corps de l'article <span id="char-count" class="char-count"></span></label>
@@ -233,7 +261,6 @@
   </div>
 </div>
 
-<script src="store.js?v=1"></script>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

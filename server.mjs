@@ -28,7 +28,6 @@ loadEnv();
 
 const SERVER_START = Date.now();
 const health = { uptime: 0, pid: process.pid, port: null };
-writeHealthFile('starting');
 
 function writeHealthFile(status) {
   try {
@@ -37,6 +36,8 @@ function writeHealthFile(status) {
     fs.writeFileSync(path.join(LOG_DIR, 'server.pid'), String(process.pid));
   } catch {}
 }
+
+writeHealthFile('starting');
 
 function loadEnv() {
   try {
@@ -110,17 +111,20 @@ async function handleApi(req, res, pathname, url) {
 
   let body = '';
   if (req.method === 'POST' || req.method === 'PUT') {
-    await new Promise(resolve => {
-      req.on('data', chunk => body += chunk);
+    await new Promise((resolve, reject) => {
+      let size = 0;
+      req.on('data', chunk => {
+        size += chunk.length;
+        if (size > 1e6) {
+          reject(new Error('Payload too large'));
+          req.destroy();
+        }
+        body += chunk;
+      });
       req.on('end', resolve);
+      req.on('error', reject);
     });
     try { req.body = JSON.parse(body); } catch { req.body = {}; }
-  }
-
-  try {
-    delete _require.cache[_require.resolve(handlerFile)];
-  } catch {
-    // cache vide = première exécution
   }
 
   const handler = _require(handlerFile);
@@ -143,10 +147,17 @@ async function handleApi(req, res, pathname, url) {
 
 const server = http.createServer();
 
-server.setTimeout(25000);
+server.setTimeout(120_000);
 
 server.on('request', async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
+  let url;
+  try {
+    url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid URL' }));
+    return;
+  }
   const { pathname } = url;
 
   res.setHeader('X-Content-Type-Options', 'nosniff');

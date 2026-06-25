@@ -1,12 +1,7 @@
-const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('../lib/rateLimit');
 const { createSession, destroySession } = require('../lib/auth');
 const { log } = require('../lib/logger');
-
-function generateToken() {
-  return crypto.randomBytes(48).toString('hex');
-}
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -48,12 +43,11 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Mot de passe incorrect' });
   }
 
-  const token = generateToken();
-  createSession(token);
+  const token = createSession();
   log('info', 'login_ok', { ip });
 
   const isDev = process.env.VERCEL_ENV !== 'production';
   res.setHeader('Set-Cookie', `session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}${isDev ? '' : '; Secure'}`);
 
-  return res.status(200).json({ success: true, token });
+  return res.status(200).json({ success: true });
 };

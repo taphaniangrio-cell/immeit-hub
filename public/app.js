@@ -11,6 +11,7 @@ let currentPage = 1
 let isDirty = false
 let autoSaveTimer = null
 let isGenerating = false
+let accrocheActive = 'a'
 const PAGE_SIZE = 10
 const LINKEDIN_TARGET = 1500
 
@@ -18,7 +19,7 @@ const $ = id => document.getElementById(id)
 
 const appContainer = $('app'), loginScreen = $('login-screen'), mainScreen = $('main-screen'), editorScreen = $('editor-screen')
 const loginForm = $('login-form'), loginPassword = $('login-password'), loginError = $('login-error')
-const editTitre = $('edit-titre'), editCorps = $('edit-corps'), editHashtags = $('edit-hashtags')
+const editTitre = $('edit-titre'), editAccrocheA = $('edit-accroche-a'), editAccrocheB = $('edit-accroche-b'), editCorps = $('edit-corps'), editHashtags = $('edit-hashtags')
 const editSource = $('edit-source'), editIaInfo = $('edit-ia-info'), editDates = $('edit-dates')
 const editorPlaceholder = $('editor-placeholder'), editorForm = $('editor-form')
 const btnBack = $('btn-back'), btnSave = $('btn-save'), btnValidate = $('btn-validate')
@@ -36,6 +37,8 @@ const hashtagSuggestions = $('hashtag-suggestions')
 const editImages = $('edit-images'), editImageArea = $('edit-image-area')
 const btnAddImage = $('btn-add-image'), btnReplaceImage = $('btn-replace-image'), btnRemoveImage = $('btn-remove-image')
 const imageSearchBox = $('image-search-box'), imageSearchInput = $('image-search-input'), imageSearchResults = $('image-search-results')
+const accrocheRadios = document.querySelectorAll('input[name="accroche-active"]')
+const accrocheCards = document.querySelectorAll('.accroche-card')
 const aiProvider = $('ai-provider-main'), aiModel = $('ai-model-main'), aiKeyStatus = $('ai-key-status-main')
 const btnPreview = $('btn-preview'), linkedinPreview = $('linkedin-preview'), liPreviewBody = $('li-preview-body'), btnClosePreview = $('btn-close-preview')
 
@@ -103,24 +106,33 @@ function statusClass(s) { return 's-' + (s || 'brouillon') }
 
 async function api(path, options = {}) {
   const sep = path.includes('?') ? '&' : '?'
-  const res = await fetch(`${API_BASE}${path}${sep}_=${Date.now()}`, {
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'same-origin',
-    ...options,
-  })
-  if (res.status === 401) {
-    localStorage.removeItem('immeit_token')
-    document.cookie = 'session=; Path=/; Max-Age=0'
-    showLogin()
-    throw new Error('Session expirée. Veuillez vous reconnecter.')
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 120_000)
+  try {
+    const res = await fetch(`${API_BASE}${path}${sep}_=${Date.now()}`, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      ...options,
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+    if (res.status === 401) {
+      document.cookie = 'session=; Path=/; Max-Age=0'
+      localStorage.removeItem('immeit_session')
+      showLogin()
+      throw new Error('Session expirée. Veuillez vous reconnecter.')
+    }
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+    return data
+  } catch (err) {
+    clearTimeout(timeout)
+    throw err
   }
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
-  return data
 }
 
 function hasSession() {
-  return !!localStorage.getItem('immeit_token')
+  return localStorage.getItem('immeit_session') === '1'
 }
 
 function loadAiSettings(forceProvider) {
@@ -270,16 +282,12 @@ imageSearchInput.addEventListener('input', async () => {
   const q = imageSearchInput.value.trim()
   if (q.length < 3) { imageSearchResults.innerHTML = ''; return }
   try {
-    const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=6&orientation=landscape`, {
-      headers: { Authorization: 'ujXlp9entJwq92GR2hmYIsyfqjLFiSnS8xhc8YMIImTLjK11JsKd2PB2' },
-    })
-    if (!res.ok) { imageSearchResults.innerHTML = '<div class="empty">Erreur recherche</div>'; return }
-    const data = await res.json()
+    const data = await api(`/images?query=${encodeURIComponent(q)}`)
     const photos = data.photos || []
     if (!photos.length) { imageSearchResults.innerHTML = '<div class="empty">Aucun résultat</div>'; return }
     imageSearchResults.innerHTML = photos.map(p => `
-      <div class="search-result-item" data-url="${esc(p.src.large || p.src.medium)}" data-thumb="${esc(p.src.small || p.src.tiny)}" data-photographer="${esc(p.photographer)}" data-photographer-url="${esc(p.photographer_url)}" data-alt="${esc(p.alt || '')}">
-        <img src="${esc(p.src.small || p.src.tiny)}" alt="${esc(p.alt || '')}" loading="lazy">
+      <div class="search-result-item" data-url="${esc(p.url)}" data-thumb="${esc(p.thumbnail)}" data-photographer="${esc(p.photographer)}" data-photographer-url="${esc(p.photographer_url)}" data-alt="${esc(p.alt || '')}">
+        <img src="${esc(p.thumbnail)}" alt="${esc(p.alt || '')}" loading="lazy">
         <div class="search-result-overlay">+</div>
       </div>
     `).join('')
@@ -323,7 +331,7 @@ loginForm.addEventListener('submit', async e => {
   loginError.classList.add('hidden')
   try {
     const data = await api('/auth', { method: 'POST', body: JSON.stringify({ password: loginPassword.value.trim() }) })
-    if (data.token) localStorage.setItem('immeit_token', data.token)
+    localStorage.setItem('immeit_session', '1')
     showMain()
   } catch (err) {
     loginError.textContent = err.message
@@ -335,7 +343,7 @@ btnLogout.addEventListener('click', async () => {
   try {
     await api('/auth', { method: 'POST', body: JSON.stringify({ action: 'logout' }) })
   } catch {}
-  localStorage.removeItem('immeit_token')
+  localStorage.removeItem('immeit_session')
   showLogin()
 })
 
@@ -355,7 +363,7 @@ function showMain() {
   editorScreen.classList.remove('hidden')
   resetEditor()
   currentPage = 1
-  loadAvailableModels()
+  if (!availableModels) loadAvailableModels()
   loadArticles()
 }
 
@@ -375,6 +383,11 @@ function showEditor(article) {
 
   if (article) {
     editTitre.value = article.titre_interne || ''
+    editAccrocheA.value = article.accroche_a || ''
+    editAccrocheB.value = article.accroche_b || ''
+    accrocheActive = article.accroche_active || 'a'
+    accrocheRadios.forEach(r => r.checked = r.value === accrocheActive)
+    accrocheCards.forEach(c => c.classList.toggle('selected', c.dataset.value === accrocheActive))
     editCorps.value = article.corps || ''
     const h = article.hashtags || []
     editHashtags.value = Array.isArray(h) ? h.join(' ') : String(h)
@@ -406,6 +419,11 @@ function showEditor(article) {
     updateStatusBar(article.statut)
   } else {
     editTitre.value = ''
+    editAccrocheA.value = ''
+    editAccrocheB.value = ''
+    accrocheActive = 'a'
+    accrocheRadios.forEach(r => r.checked = r.value === 'a')
+    accrocheCards.forEach(c => c.classList.toggle('selected', c.dataset.value === 'a'))
     editCorps.value = ''
     editHashtags.value = ''
     editSource.textContent = currentNews ? esc(currentNews.titre) : '—'
@@ -483,13 +501,16 @@ async function autoSave() {
     await api(`/articles?id=${editingId}`, {
       method: 'PUT',
       body: JSON.stringify({
-        titre_interne: editTitre.value,
-        corps: editCorps.value,
-        hashtags: editHashtags.value.split(/\s+/).filter(h => h),
-        image_url: articleImages[0]?.url || null,
-        image_photographer: articleImages[0]?.photographer || null,
-        image_photographer_url: articleImages[0]?.photographer_url || null,
-        image_options: imageOptions,
+      titre_interne: editTitre.value,
+      accroche_a: editAccrocheA.value || null,
+      accroche_b: editAccrocheB.value || null,
+      accroche_active: accrocheActive,
+      corps: editCorps.value,
+      hashtags: editHashtags.value.split(/\s+/).filter(h => h),
+      image_url: articleImages[0]?.url || null,
+      image_photographer: articleImages[0]?.photographer || null,
+      image_photographer_url: articleImages[0]?.photographer_url || null,
+      image_options: imageOptions,
       }),
     })
     isDirty = false
@@ -505,8 +526,47 @@ window.addEventListener('beforeunload', e => {
 })
 
 editTitre.addEventListener('input', markDirty)
+editAccrocheA.addEventListener('input', markDirty)
+editAccrocheB.addEventListener('input', markDirty)
 editCorps.addEventListener('input', () => { markDirty(); updateWords(); updateCharCount() })
 editHashtags.addEventListener('input', markDirty)
+
+function injectAccrocheIntoBody() {
+  const selected = accrocheActive === 'a' ? editAccrocheA.value : editAccrocheB.value
+  const current = editCorps.value
+  let clean = current
+
+  const aVal = editAccrocheA.value
+  const bVal = editAccrocheB.value
+
+  if (aVal && clean.startsWith(aVal)) {
+    clean = clean.slice(aVal.length).replace(/^\n+/, '')
+  } else if (bVal && clean.startsWith(bVal)) {
+    clean = clean.slice(bVal.length).replace(/^\n+/, '')
+  }
+
+  editCorps.value = selected ? selected + '\n\n' + clean : clean
+  updateWords()
+  updateCharCount()
+  markDirty()
+}
+
+accrocheCards.forEach(c => {
+  c.addEventListener('click', () => {
+    const val = c.dataset.value
+    accrocheActive = val
+    accrocheRadios.forEach(r => r.checked = r.value === val)
+    accrocheCards.forEach(card => card.classList.toggle('selected', card.dataset.value === val))
+    injectAccrocheIntoBody()
+  })
+})
+
+editAccrocheA.addEventListener('input', () => {
+  if (accrocheActive === 'a') markDirty()
+})
+editAccrocheB.addEventListener('input', () => {
+  if (accrocheActive === 'b') markDirty()
+})
 
 function formatHashtags(input) {
   return input
@@ -527,6 +587,7 @@ function loadArticles() {
   const params = new URLSearchParams()
   if (filter) params.set('statut', filter)
   params.set('limit', '100')
+  if (currentPage > 1) params.set('page', String(currentPage))
   api(`/articles?${params}`).then(data => {
     articles = data.articles || []
     currentPage = 1
@@ -586,8 +647,25 @@ function renderArticles() {
   } else $('pagination').classList.add('hidden')
 }
 
-btnPrev.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderArticles() } })
-btnNext.addEventListener('click', () => { const t = Math.ceil(articles.length / PAGE_SIZE); if (currentPage < t) { currentPage++; renderArticles() } })
+btnPrev.addEventListener('click', () => {
+  if (currentPage > 1) {
+    currentPage--
+    const start = (currentPage - 1) * PAGE_SIZE
+    const a = articles[start]
+    if (a) showEditor(a)
+    renderArticles()
+  }
+})
+btnNext.addEventListener('click', () => {
+  const t = Math.ceil(articles.length / PAGE_SIZE)
+  if (currentPage < t) {
+    currentPage++
+    const start = (currentPage - 1) * PAGE_SIZE
+    const a = articles[start]
+    if (a) showEditor(a)
+    renderArticles()
+  }
+})
 
 document.querySelectorAll('.tab').forEach(b => {
   b.addEventListener('click', () => {
@@ -646,6 +724,9 @@ btnSave.addEventListener('click', async () => {
   const imageOptions = articleImages.length ? articleImages : null
   const data = {
     titre_interne: editTitre.value,
+    accroche_a: editAccrocheA.value || null,
+    accroche_b: editAccrocheB.value || null,
+    accroche_active: accrocheActive,
     corps: editCorps.value,
     hashtags: editHashtags.value.split(/\s+/).filter(h => h),
     image_url: articleImages[0]?.url || null,
@@ -672,14 +753,20 @@ btnSave.addEventListener('click', async () => {
       }
       const result = await api('/articles', { method: 'POST', body: JSON.stringify(articleData) })
       editingId = result.article.id
+      articles.unshift(result.article)
+      renderArticles()
       editorStatus.textContent = 'brouillon'
       editorStatus.className = 'badge s-brouillon'
       updateEditorButtons('brouillon')
       isDirty = false
       setSaveStatus('✓ Sauvegardé', 'saved')
       showToast('Article créé', 'success')
+      return
     }
-    await loadArticles()
+    const updated = await api(`/articles?id=${editingId}`, { method: 'GET' })
+    const idx = articles.findIndex(a => a.id === editingId)
+    if (idx !== -1) articles[idx] = updated.article
+    renderArticles()
   } catch (err) { showToast('Erreur: ' + err.message, 'error') }
 })
 
@@ -696,7 +783,8 @@ btnValidate.addEventListener('click', async () => {
     updateStatusBar('valide')
     isDirty = false
     showToast('Article validé', 'success')
-    await loadArticles()
+    const idx = articles.findIndex(a => a.id === editingId)
+    if (idx !== -1) { articles[idx].statut = 'valide'; renderArticles() }
   } catch (err) { showToast('Erreur: ' + err.message, 'error') }
 })
 
@@ -764,7 +852,8 @@ btnCopy.addEventListener('click', async () => {
       editorStatus.className = 'badge s-publie'
       updateEditorButtons('publie')
       updateStatusBar('publie')
-      await loadArticles()
+      const idx = articles.findIndex(a => a.id === editingId)
+      if (idx !== -1) { articles[idx].statut = 'publie'; renderArticles() }
     }
     showToast('Copié pour LinkedIn !', 'success')
   } catch { showToast('Erreur de copie', 'error') }
@@ -806,7 +895,8 @@ btnArchive.addEventListener('click', async () => {
     updateEditorButtons('archive')
     statusBar.classList.add('hidden')
     showToast('Article archivé', 'info')
-    await loadArticles()
+    const idx = articles.findIndex(a => a.id === editingId)
+    if (idx !== -1) { articles[idx].statut = 'archive'; renderArticles() }
   } catch (err) { showToast('Erreur: ' + err.message, 'error') }
 })
 
@@ -819,7 +909,8 @@ btnRestore.addEventListener('click', async () => {
     updateEditorButtons('brouillon')
     updateStatusBar('brouillon')
     showToast('Article restauré en brouillon', 'info')
-    await loadArticles()
+    const idx = articles.findIndex(a => a.id === editingId)
+    if (idx !== -1) { articles[idx].statut = 'brouillon'; renderArticles() }
   } catch (err) { showToast('Erreur: ' + err.message, 'error') }
 })
 
@@ -865,7 +956,12 @@ btnRegenGo.addEventListener('click', async () => {
     currentIaMeta.image_options = data.article?.image_options || []
     const art = data.article
     editTitre.value = art.titre_interne || ''
-    editCorps.value = `Accroche A :\n${art.accroche_a || ''}\n\nAccroche B :\n${art.accroche_b || ''}\n\n${art.corps || ''}`
+    editAccrocheA.value = art.accroche_a || ''
+    editAccrocheB.value = art.accroche_b || ''
+    accrocheActive = 'a'
+    accrocheRadios.forEach(r => r.checked = r.value === 'a')
+    accrocheCards.forEach(c => c.classList.toggle('selected', c.dataset.value === 'a'))
+    editCorps.value = (art.accroche_a || '') + '\n\n' + (art.corps || '')
     editHashtags.value = (art.hashtags || []).join(' ')
     setArticleImages(art.image_options || [], art.image_url)
     updateWords()
@@ -877,7 +973,9 @@ btnRegenGo.addEventListener('click', async () => {
         method: 'PUT',
         body: JSON.stringify({
           titre_interne: art.titre_interne,
-          corps: editCorps.value,
+          accroche_a: art.accroche_a || null,
+          accroche_b: art.accroche_b || null,
+          corps: art.corps || '',
           hashtags: art.hashtags || [],
           image_url: articleImages[0]?.url || null,
           image_photographer: articleImages[0]?.photographer || null,
@@ -893,7 +991,8 @@ btnRegenGo.addEventListener('click', async () => {
       editorStatus.textContent = 'brouillon'
       editorStatus.className = 'badge s-brouillon'
       updateEditorButtons('brouillon')
-      await loadArticles()
+      const idx = articles.findIndex(a => a.id === editingId)
+    if (idx !== -1) { articles[idx].titre_interne = art.titre_interne; articles[idx].statut = 'brouillon'; renderArticles() }
     }
     regenBox.classList.add('hidden')
     regenFeedback.value = ''
@@ -967,7 +1066,12 @@ btnCustomGenerate.addEventListener('click', async () => {
     const art = data.article
     showEditor(null)
     editTitre.value = art.titre_interne || sujet
-    editCorps.value = `Accroche A :\n${art.accroche_a || ''}\n\nAccroche B :\n${art.accroche_b || ''}\n\n${art.corps || ''}`
+    editAccrocheA.value = art.accroche_a || ''
+    editAccrocheB.value = art.accroche_b || ''
+    accrocheActive = 'a'
+    accrocheRadios.forEach(r => r.checked = r.value === 'a')
+    accrocheCards.forEach(c => c.classList.toggle('selected', c.dataset.value === 'a'))
+    editCorps.value = (art.accroche_a || '') + '\n\n' + (art.corps || '')
     editHashtags.value = (art.hashtags || []).join(' ')
     setArticleImages(art.image_options || [], art.image_url)
     updateWords()
@@ -1017,7 +1121,12 @@ async function generateFromNews(news) {
     const art = data.article
     showEditor(null)
     editTitre.value = art.titre_interne || ''
-    editCorps.value = `Accroche A :\n${art.accroche_a || ''}\n\nAccroche B :\n${art.accroche_b || ''}\n\n${art.corps || ''}`
+    editAccrocheA.value = art.accroche_a || ''
+    editAccrocheB.value = art.accroche_b || ''
+    accrocheActive = 'a'
+    accrocheRadios.forEach(r => r.checked = r.value === 'a')
+    accrocheCards.forEach(c => c.classList.toggle('selected', c.dataset.value === 'a'))
+    editCorps.value = (art.accroche_a || '') + '\n\n' + (art.corps || '')
     editHashtags.value = (art.hashtags || []).join(' ')
     setArticleImages(art.image_options || [], art.image_url)
     updateWords()
