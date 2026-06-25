@@ -586,7 +586,7 @@ function loadArticles() {
   showSkeleton(articleList)
   const params = new URLSearchParams()
   if (filter) params.set('statut', filter)
-  params.set('limit', '100')
+  params.set('limit', '50')
   if (currentPage > 1) params.set('page', String(currentPage))
   api(`/articles?${params}`).then(data => {
     articles = data.articles || []
@@ -788,16 +788,25 @@ btnValidate.addEventListener('click', async () => {
   } catch (err) { showToast('Erreur: ' + err.message, 'error') }
 })
 
-// --- FORMAT FOR LINKEDIN (improved) ---
+// --- FORMAT FOR LINKEDIN (nettoyage avant copie) ---
 function formatForLinkedIn(text) {
-  return text
+  let result = text
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/\*(.+?)\*/g, '$1')
-    .replace(/^[-•]\s+/gm, '• ')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^[-]\s+/gm, '• ')
+    .replace(/^•\s*/gm, '• ')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/\n{4,}/g, '\n\n\n')
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
+    .replace(/^[-*_]{3,}\s*$/gm, '')
+    .split('\n')
+    .map(l => l.trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim()
+  return result
 }
 
 function renderLinkedInPreview(text) {
@@ -824,8 +833,9 @@ function renderLinkedInPreview(text) {
 
     if (inList) { html += '</ul>'; inList = false }
 
-    const bolded = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    html += `<p class="li-paragraph">${esc(bolded.replace(/\*\*(.+?)\*\*/g, '$1'))}</p>`
+    const escaped = esc(trimmed)
+    const formatted = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    html += `<p class="li-paragraph">${formatted}</p>`
   }
   if (inList) html += '</ul>'
 

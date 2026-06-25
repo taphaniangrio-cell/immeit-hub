@@ -34,14 +34,16 @@ module.exports = requireAuth(async (req, res) => {
     const resolvedProvider = provider || 'groq';
     const resolvedModel = model || null;
     const generationType = sanitizedPrompt ? 'custom' : 'news';
-    const article = await generateArticle(news, feedback || '', resolvedProvider, resolvedModel, sanitizedPrompt || null);
 
-    const images = await findImagesForArticle({
-      titre_interne: article.titre_interne,
-      hashtags: article.hashtags,
-      corps: article.corps,
-      image_keywords: article.image_keywords,
-    });
+    const [article, images] = await Promise.all([
+      generateArticle(news, feedback || '', resolvedProvider, resolvedModel, sanitizedPrompt || null),
+      findImagesForArticle({
+        titre_interne: sanitizedPrompt || news?.titre || '',
+        hashtags: [],
+        corps: news?.resume || sanitizedPrompt || '',
+        image_keywords: null,
+      }),
+    ]);
 
     const primary = images[0] || null;
 
