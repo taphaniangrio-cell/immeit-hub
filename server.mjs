@@ -64,6 +64,9 @@ function loadEnv() {
 
 function serveStatic(res, filePath) {
   const ext = path.extname(filePath);
+  if (ext === '.html' || ext === '.css' || ext === '.js') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
   fs.readFile(filePath, (err, data) => {
     if (err) {
       fs.readFile(path.join(__dirname, 'public', 'index.html'), (err2, data2) => {
@@ -183,7 +186,7 @@ function tryListen(port, maxAttempts = 10) {
     console.log('  ╔══════════════════════════════════════╗');
     console.log('  ║     IMMEIT — Générateur d\'articles   ║');
     console.log('  ╠══════════════════════════════════════╣');
-    console.log('  ║  App   : ${url.padEnd(33)}║');
+    console.log(`  ║  App   : ${url.padEnd(33)}║`);
     console.log(`  ║  API   : ${(url + '/api/').padEnd(33)}║`);
     console.log(`  ║  Port  : ${String(port).padEnd(38)}║`);
     console.log('  ╚══════════════════════════════════════╝');
@@ -193,12 +196,15 @@ function tryListen(port, maxAttempts = 10) {
       console.log('');
     }
 
-    // Auto-sync SharePoint data after server start
+    // Auto-sync SharePoint data after server start (with timeout to prevent hanging)
     setTimeout(async () => {
       try {
         const autoSync = _require('./lib/auto-sync');
         console.log('  ⟳ Synchronisation SharePoint...');
-        const result = await autoSync.sync();
+        const result = await Promise.race([
+          autoSync.sync(),
+          new Promise(r => setTimeout(() => r(null), 15000)),
+        ]);
         if (result) {
           console.log(`  ✓ ${result.items.length} demandes synchronisées depuis SharePoint`);
         } else {

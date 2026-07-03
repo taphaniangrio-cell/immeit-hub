@@ -7,18 +7,18 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="IMMEIT Articles">
+<meta name="apple-mobile-web-app-title" content="IMMEIT Hub">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Générateur d'articles LinkedIn — IMMEIT</title>
+<title>IMMEIT Hub — Plateforme interne</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=105">
 </head>
 <body>
 
@@ -26,8 +26,8 @@
 <div id="login-screen" class="login-page hidden">
   <div class="login-card">
     <img src="logo-immeit.webp" alt="IMMEIT" class="login-card__logo">
-    <h1 class="login-card__title">Articles LinkedIn</h1>
-    <p class="login-card__subtitle">Plateforme de publication IMMEIT</p>
+    <h1 class="login-card__title">IMMEIT Hub</h1>
+    <p class="login-card__subtitle">Plateforme interne</p>
     <form id="login-form" class="login-form">
       <label class="meta-field__label" for="login-password">Mot de passe</label>
       <input type="password" id="login-password" class="login-input" placeholder="••••••••" autocomplete="current-password" required>
@@ -37,211 +37,223 @@
   </div>
 </div>
 
-<!-- APP -->
-<div id="app" class="app hidden">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar__logo">
-      <img src="logo-immeit.webp" alt="IMMEIT">
-      <span class="sidebar__logo-text">Articles</span>
+<!-- SHELL -->
+<div id="shell" class="shell hidden">
+  <aside class="shell-sidebar">
+    <div class="shell-sidebar-brand">
+      <img src="logo-immeit.webp" alt="IMMEIT" class="shell-sidebar-logo">
+      <span class="shell-sidebar-name">IMMEIT Hub</span>
     </div>
-    <nav class="sidebar__nav">
-      <div class="sidebar__ai-selector">
-        <select id="ai-provider-main"></select>
-        <select id="ai-model-main"></select>
-        <span id="ai-key-status-main" class="key-status"></span>
-      </div>
-      <button id="btn-new" class="sidebar__btn-new">+ Nouvel article</button>
-      <button id="btn-dashboard" class="sidebar__btn-dashboard">📊 Tableau de bord</button>
+    <nav class="shell-sidebar-nav" id="shell-nav">
+      <a href="#/articles" class="shell-link" data-app="articles">
+        <svg class="shell-link-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <span class="shell-link-label">Articles</span>
+      </a>
+      <a href="#/dashboard" class="shell-link" data-app="dashboard">
+        <svg class="shell-link-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        <span class="shell-link-label">Tableau de bord</span>
+      </a>
+      <div class="shell-sidebar-spacer"></div>
+      <a href="#" class="shell-link shell-link-new" id="shell-new-app">
+        <svg class="shell-link-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <span class="shell-link-label">Nouvelle app</span>
+      </a>
     </nav>
-    <div class="sidebar__footer">
-      <button id="btn-logout" class="sidebar__logout">Déconnexion</button>
+    <div class="shell-sidebar-footer">
+      <span class="shell-sidebar-version">v105</span>
     </div>
   </aside>
 
-  <!-- LISTE ARTICLES -->
-  <section id="main-screen" class="article-list-section">
-    <div class="tabs">
-      <button class="tab active" data-filter="">Tous</button>
-      <button class="tab" data-filter="brouillon">Brouillon</button>
-      <button class="tab" data-filter="en_revision">En révision</button>
-      <button class="tab" data-filter="valide">Validé</button>
-      <button class="tab" data-filter="publie">Publié</button>
-      <button class="tab" data-filter="archive">Archivé</button>
-    </div>
-    <div id="article-list" class="article-list"><div class="empty">Chargement...</div></div>
-    <div id="pagination" class="pagination hidden">
-      <button id="btn-prev" class="btn btn--ghost">&larr; Précédent</button>
-      <span id="page-info" class="pagination-info"></span>
-      <button id="btn-next" class="btn btn--ghost">Suivant &rarr;</button>
-    </div>
-  </section>
-
-  <!-- ÉDITEUR -->
-  <main id="editor-screen" class="editor hidden">
-    <div id="editor-placeholder" class="editor__placeholder">
-      <div class="editor__placeholder-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="12" y1="18" x2="12" y2="12"/>
-          <line x1="9" y1="15" x2="15" y2="15"/>
-        </svg>
+  <div class="shell-main">
+    <header class="shell-topbar" id="shell-topbar">
+      <div class="shell-topbar-left">
+        <button id="shell-menu-btn" class="shell-topbar-menu-btn">☰</button>
+        <h2 class="shell-topbar-title" id="shell-title">Articles</h2>
       </div>
-      <h3 class="editor__placeholder-title">Sélectionnez un article</h3>
-      <p class="editor__placeholder-text">Choisissez un article dans la liste<br>pour le modifier ou le publier</p>
-    </div>
-    <div id="editor-form" class="editor__form">
-    <div class="editor__header">
-      <span id="btn-back" class="editor__back-btn">&larr; Retour</span>
-      <input type="text" id="edit-titre" class="editor__title-input" placeholder="Titre interne…">
-      <span id="editor-status" class="badge s-brouillon">Brouillon</span>
-    </div>
-    <div id="status-bar" class="status-bar hidden"></div>
-    <div class="editor__body">
-
-      <!-- Illustrations -->
-      <div class="field">
-        <label>Illustrations</label>
-        <div id="edit-image-area" class="image-area">
-          <div id="edit-images" class="images-inline"></div>
-          <div class="image-toolbar">
-            <button id="btn-add-image" class="btn btn--ghost btn-sm">+ Ajouter</button>
-            <button id="btn-replace-image" class="btn btn--ghost btn-sm hidden">🔄 Remplacer</button>
-            <button id="btn-remove-image" class="btn btn--ghost btn-sm hidden">🗑 Supprimer</button>
-          </div>
-          <div id="image-search-box" class="image-search-box hidden">
-            <input type="text" id="image-search-input" placeholder="Rechercher une image…">
-            <div id="image-search-results" class="image-search-results"></div>
-          </div>
+      <div class="shell-topbar-center">
+        <div class="shell-ai-selector" id="shell-ai-selector">
+          <select id="ai-provider-main"></select>
+          <select id="ai-model-main"></select>
+          <span id="ai-key-status-main" class="shell-key-status"></span>
         </div>
       </div>
+      <div class="shell-topbar-right">
+        <button id="btn-logout" class="shell-logout-btn" title="Déconnexion">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </header>
 
-      <!-- Accroches -->
-      <div class="field">
-        <label class="accroche-section-label">
-          Accroches
-          <span class="meta-field__label" style="font-weight:400;color:var(--color-text-light)">sélectionnez celle à intégrer dans le post</span>
-        </label>
-        <div class="accroche-cards">
-          <div class="accroche-card" data-value="a" id="accroche-card-a">
-            <input type="radio" name="accroche-active" value="a" class="accroche-radio">
-            <div class="accroche-card-header">
-              <span class="accroche-card-badge accroche-card-badge--a">A</span>
-              <span class="accroche-card-type">Directe / Choc</span>
-              <span class="accroche-card-check">✓</span>
+    <div class="shell-viewport" id="shell-viewport">
+      <div class="app-row">
+        <section id="main-screen" class="article-list-section">
+          <div class="article-list-toolbar">
+            <button id="btn-new" class="btn btn--primary btn-sm">+ Nouvel article</button>
+          </div>
+          <div class="tabs">
+            <button class="tab active" data-filter="">Tous</button>
+            <button class="tab" data-filter="brouillon">Brouillon</button>
+            <button class="tab" data-filter="en_revision">En révision</button>
+            <button class="tab" data-filter="valide">Validé</button>
+            <button class="tab" data-filter="publie">Publié</button>
+            <button class="tab" data-filter="archive">Archivé</button>
+          </div>
+          <div id="article-list" class="article-list"><div class="empty">Chargement...</div></div>
+          <div id="pagination" class="pagination hidden">
+            <button id="btn-prev" class="btn btn--ghost">&larr; Précédent</button>
+            <span id="page-info" class="pagination-info"></span>
+            <button id="btn-next" class="btn btn--ghost">Suivant &rarr;</button>
+          </div>
+        </section>
+
+        <main id="editor-screen" class="editor">
+          <div id="editor-placeholder" class="editor__placeholder">
+          <div class="editor__placeholder-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <h3 class="editor__placeholder-title">Sélectionnez un article</h3>
+          <p class="editor__placeholder-text">Choisissez un article dans la liste<br>pour le modifier ou le publier</p>
+        </div>
+        <div id="editor-form" class="editor__form">
+        <div class="editor__header">
+          <span id="btn-back" class="editor__back-btn">&larr; Retour</span>
+          <input type="text" id="edit-titre" class="editor__title-input" placeholder="Titre interne…">
+          <span id="editor-status" class="badge s-brouillon">Brouillon</span>
+        </div>
+        <div id="status-bar" class="status-bar hidden"></div>
+        <div class="editor__body">
+          <div class="field">
+            <label>Illustrations</label>
+            <div id="edit-image-area" class="image-area">
+              <div id="edit-images" class="images-inline"></div>
+              <div class="image-toolbar">
+                <button id="btn-add-image" class="btn btn--ghost btn-sm">+ Ajouter</button>
+                <button id="btn-replace-image" class="btn btn--ghost btn-sm hidden">🔄 Remplacer</button>
+                <button id="btn-remove-image" class="btn btn--ghost btn-sm hidden">🗑 Supprimer</button>
+              </div>
+              <div id="image-search-box" class="image-search-box hidden">
+                <input type="text" id="image-search-input" placeholder="Rechercher une image…">
+                <div id="image-search-results" class="image-search-results"></div>
+              </div>
             </div>
-            <textarea id="edit-accroche-a" class="accroche-card-input" placeholder="Saisissez votre accroche percutante…" rows="2"></textarea>
           </div>
-          <div class="accroche-card" data-value="b" id="accroche-card-b">
-            <input type="radio" name="accroche-active" value="b" class="accroche-radio">
-            <div class="accroche-card-header">
-              <span class="accroche-card-badge accroche-card-badge--b">B</span>
-              <span class="accroche-card-type">Question / Réflexion</span>
-              <span class="accroche-card-check">✓</span>
+          <div class="field">
+            <label class="accroche-section-label">
+              Accroches
+              <span class="meta-field__label" style="font-weight:400;color:var(--color-text-light)">sélectionnez celle à intégrer dans le post</span>
+            </label>
+            <div class="accroche-cards">
+              <div class="accroche-card" data-value="a" id="accroche-card-a">
+                <input type="radio" name="accroche-active" value="a" class="accroche-radio">
+                <div class="accroche-card-header">
+                  <span class="accroche-card-badge accroche-card-badge--a">A</span>
+                  <span class="accroche-card-type">Directe / Choc</span>
+                  <span class="accroche-card-check">✓</span>
+                </div>
+                <textarea id="edit-accroche-a" class="accroche-card-input" placeholder="Saisissez votre accroche percutante…" rows="2"></textarea>
+              </div>
+              <div class="accroche-card" data-value="b" id="accroche-card-b">
+                <input type="radio" name="accroche-active" value="b" class="accroche-radio">
+                <div class="accroche-card-header">
+                  <span class="accroche-card-badge accroche-card-badge--b">B</span>
+                  <span class="accroche-card-type">Question / Réflexion</span>
+                  <span class="accroche-card-check">✓</span>
+                </div>
+                <textarea id="edit-accroche-b" class="accroche-card-input" placeholder="Saisissez votre accroche réflexive…" rows="2"></textarea>
+              </div>
             </div>
-            <textarea id="edit-accroche-b" class="accroche-card-input" placeholder="Saisissez votre accroche réflexive…" rows="2"></textarea>
+          </div>
+          <div class="field">
+            <label>Corps de l'article <span id="char-count" class="char-count"></span></label>
+            <textarea id="edit-corps" placeholder="Rédigez ou collez le corps…"></textarea>
+            <div id="word-count" class="word-count">0 mots</div>
+          </div>
+          <div class="field">
+            <label>Hashtags</label>
+            <input type="text" id="edit-hashtags" placeholder="#maintenance #GMAO">
+            <div id="hashtag-suggestions" class="hashtag-suggestions"></div>
+          </div>
+          <div class="editor__meta-panel">
+            <div class="meta-field">
+              <span class="meta-field__label">Source</span>
+              <div id="edit-source" class="meta-field__value meta-field__value--muted">—</div>
+            </div>
+            <div class="meta-field">
+              <span class="meta-field__label">IA · Modèle</span>
+              <div id="edit-ia-info" class="meta-field__value meta-field__value--muted">—</div>
+            </div>
+            <div class="meta-field">
+              <span class="meta-field__label">Dates</span>
+              <div id="edit-dates" class="meta-field__value meta-field__value--muted">—</div>
+            </div>
+            <div class="meta-field">
+              <span class="meta-field__label">Sauvegarde</span>
+              <div id="save-indicator" class="meta-field__value meta-field__value--muted">—</div>
+            </div>
+          </div>
+          <div id="regen-box" class="hidden">
+            <div class="field">
+              <label>Consignes</label>
+              <textarea id="regen-feedback" style="min-height:100px;" placeholder="Plus court, plus technique…"></textarea>
+            </div>
+            <div class="regen-suggestions">
+              <span class="regen-chip" data-hint="Rends l'accroche plus percutante">⚡ Accroche</span>
+              <span class="regen-chip" data-hint="Ajoute un exemple concret africain">🌍 Exemple local</span>
+              <span class="regen-chip" data-hint="Raccourcis de 20%">✂️ Raccourcir</span>
+              <span class="regen-chip" data-hint="Rends le ton plus expert">🎓 Plus expert</span>
+              <span class="regen-chip" data-hint="Améliore l'appel à l'action final">📣 CTA fort</span>
+            </div>
+            <button id="btn-regen-go" class="btn btn--primary" style="margin-top:8px;width:100%;">Confirmer</button>
           </div>
         </div>
+        <div class="action-bar">
+          <div class="action-bar__primary">
+            <button id="btn-save" class="btn btn--primary"><span class="btn__icon">↓</span> Enregistrer</button>
+            <button id="btn-validate" class="btn btn--secondary"><span class="btn__icon">✓</span> Valider</button>
+            <button id="btn-copy" class="btn btn--linkedin"><span class="btn__icon">⌘</span> Copier LinkedIn</button>
+            <button id="btn-preview" class="btn btn--ghost">👁 Aperçu</button>
+            <button id="btn-regen" class="btn btn--ai"><span class="btn__icon">✦</span> Régénérer</button>
+          </div>
+          <div class="action-bar__secondary">
+            <button id="btn-archive" class="btn btn--ghost">Archiver</button>
+            <button id="btn-restore" class="btn btn--ghost hidden">Restaurer</button>
+            <button id="btn-delete" class="btn btn--danger">Supprimer</button>
+          </div>
+        </div>
+        </div>
+        </main>
       </div>
 
-      <!-- Corps -->
-      <div class="field">
-        <label>Corps de l'article <span id="char-count" class="char-count"></span></label>
-        <textarea id="edit-corps" placeholder="Rédigez ou collez le corps…"></textarea>
-        <div id="word-count" class="word-count">0 mots</div>
-      </div>
-
-      <!-- Hashtags -->
-      <div class="field">
-        <label>Hashtags</label>
-        <input type="text" id="edit-hashtags" placeholder="#maintenance #GMAO">
-        <div id="hashtag-suggestions" class="hashtag-suggestions"></div>
-      </div>
-
-      <!-- Metas -->
-      <div class="editor__meta-panel">
-        <div class="meta-field">
-          <span class="meta-field__label">Source</span>
-          <div id="edit-source" class="meta-field__value meta-field__value--muted">—</div>
+      <section id="dashboard-screen" class="dashboard">
+        <div class="dashboard__header">
+          <div class="dashboard__header-left">
+            <h1>📊 Tableau de bord — Suivi 2026</h1>
+          </div>
+          <div class="dashboard__header-right">
+            <span id="dash-update-info" class="dashboard__update-info"></span>
+            <button id="btn-dash-refresh" class="btn btn--ghost btn-sm" title="Actualiser">↻ Actualiser</button>
+            <button id="btn-dash-sync" class="btn btn--ghost btn-sm dash-sync-btn" title="Synchroniser SharePoint">☁ Sync</button>
+          </div>
         </div>
-        <div class="meta-field">
-          <span class="meta-field__label">IA · Modèle</span>
-          <div id="edit-ia-info" class="meta-field__value meta-field__value--muted">—</div>
+        <div id="dash-content" class="dashboard__content">
+          <div class="dashboard__loading" id="dash-loading">
+            <div class="spinner"></div>
+            <p>Chargement du tableau de bord…</p>
+          </div>
+          <div class="dashboard__error hidden" id="dash-error">
+            <span class="dash-error-icon">⚠</span>
+            <p id="dash-error-text">Erreur de chargement</p>
+            <button class="btn btn--ghost btn-sm" onclick="loadDashboard()">Réessayer</button>
+          </div>
         </div>
-        <div class="meta-field">
-          <span class="meta-field__label">Dates</span>
-          <div id="edit-dates" class="meta-field__value meta-field__value--muted">—</div>
-        </div>
-        <div class="meta-field">
-          <span class="meta-field__label">Sauvegarde</span>
-          <div id="save-indicator" class="meta-field__value meta-field__value--muted">—</div>
-        </div>
-      </div>
-
-      <!-- Régénération -->
-      <div id="regen-box" class="hidden">
-        <div class="field">
-          <label>Consignes</label>
-          <textarea id="regen-feedback" style="min-height:100px;" placeholder="Plus court, plus technique…"></textarea>
-        </div>
-        <div class="regen-suggestions">
-          <span class="regen-chip" data-hint="Rends l'accroche plus percutante">⚡ Accroche</span>
-          <span class="regen-chip" data-hint="Ajoute un exemple concret africain">🌍 Exemple local</span>
-          <span class="regen-chip" data-hint="Raccourcis de 20%">✂️ Raccourcir</span>
-          <span class="regen-chip" data-hint="Rends le ton plus expert">🎓 Plus expert</span>
-          <span class="regen-chip" data-hint="Améliore l'appel à l'action final">📣 CTA fort</span>
-        </div>
-        <button id="btn-regen-go" class="btn btn--primary" style="margin-top:8px;width:100%;">Confirmer</button>
-      </div>
-
+      </section>
     </div>
-
-    <!-- Action bar -->
-    <div class="action-bar">
-      <div class="action-bar__primary">
-        <button id="btn-save" class="btn btn--primary"><span class="btn__icon">↓</span> Enregistrer</button>
-        <button id="btn-validate" class="btn btn--secondary"><span class="btn__icon">✓</span> Valider</button>
-        <button id="btn-copy" class="btn btn--linkedin"><span class="btn__icon">⌘</span> Copier LinkedIn</button>
-        <button id="btn-preview" class="btn btn--ghost">👁 Aperçu</button>
-        <button id="btn-regen" class="btn btn--ai"><span class="btn__icon">✦</span> Régénérer</button>
-      </div>
-      <div class="action-bar__secondary">
-        <button id="btn-archive" class="btn btn--ghost">Archiver</button>
-        <button id="btn-restore" class="btn btn--ghost hidden">Restaurer</button>
-        <button id="btn-delete" class="btn btn--danger">Supprimer</button>
-      </div>
-    </div>
-    </div>
-  </main>
-
-  <!-- TABLEAU DE BORD -->
-  <section id="dashboard-screen" class="dashboard hidden">
-    <div class="dashboard__header">
-      <div class="dashboard__header-left">
-        <button id="btn-dash-back" class="dashboard__back">← Retour</button>
-        <h1>📊 Tableau de bord — Suivi 2026</h1>
-      </div>
-      <div class="dashboard__header-right">
-        <span id="dash-update-info" class="dashboard__update-info"></span>
-        <button id="btn-dash-refresh" class="btn btn--ghost btn-sm" title="Actualiser">↻ Actualiser</button>
-        <button id="btn-dash-sync" class="btn btn--ghost btn-sm dash-sync-btn" title="Synchroniser SharePoint">☁ Sync</button>
-      </div>
-    </div>
-    <div id="dash-content" class="dashboard__content">
-      <div class="dashboard__loading" id="dash-loading">
-        <div class="spinner"></div>
-        <p>Chargement du tableau de bord…</p>
-      </div>
-      <div class="dashboard__error hidden" id="dash-error">
-        <span class="dash-error-icon">⚠</span>
-        <p id="dash-error-text">Erreur de chargement</p>
-        <button class="btn btn--ghost btn-sm" onclick="loadDashboard()">Réessayer</button>
-      </div>
-    </div>
-  </section>
-
+  </div>
 </div>
 
 <!-- MODAL NOUVEL ARTICLE -->
@@ -276,7 +288,6 @@
   </div>
 </div>
 
-<!-- APERÇU LINKEDIN -->
 <div id="linkedin-preview" class="modal hidden" style="z-index:1100;">
   <div class="modal-content" style="max-width:600px;">
     <div class="modal-header">
@@ -289,6 +300,6 @@
   </div>
 </div>
 
-<script src="app.js?v=12"></script>
+<script src="app.js?v=105"></script>
 </body>
 </html>

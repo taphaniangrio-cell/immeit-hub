@@ -66,12 +66,12 @@ module.exports = requireAuth(async (req, res) => {
     if (err.message === 'CLÉ_INVALIDE') {
       return res.status(401).json({ error: 'Clé API invalide pour ce fournisseur.' });
     }
-    if (err.message.includes('HTTP 402')) {
-      return res.status(402).json({ error: 'Ce modèle nécessite un abonnement payant chez ce fournisseur. Change de modèle ou de fournisseur.' });
+    if (err.message.includes('Crédits insuffisants')) {
+      return res.status(402).json({ error: err.message });
     }
-    if (err.message.includes('HTTP 400')) {
-      return res.status(400).json({ error: 'Modèle indisponible ou ID invalide chez ce fournisseur. Essaie un autre modèle.' });
+    if (err.message.includes('indisponible')) {
+      return res.status(400).json({ error: err.message });
     }
-    return res.status(500).json({ error: 'Erreur interne. Réessaie.' });
+    return res.status(500).json({ error: err.message || 'Erreur interne. Réessaie.' });
   }
 });
