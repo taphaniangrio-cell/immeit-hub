@@ -1,5 +1,5 @@
 const API_BASE = '/api'
-const APP_VERSION = '107'
+const APP_VERSION = '108'
 
 // Force cache invalidation on version change
 ;(() => {
@@ -1427,8 +1427,8 @@ function renderDashboard(data) {
     if (stats.conf1Dist.length > 0 || stats.confDemDist.length > 0) {
       const confGrid = document.createElement('div')
       confGrid.className = 'dash-charts-grid'
-      if (stats.conf1Dist.length > 0) confGrid.appendChild(createDonutChart('Conformité 1ère diffusion', stats.conf1Dist, confColors))
-      if (stats.confDemDist.length > 0) confGrid.appendChild(createDonutChart('Conformité demande', stats.confDemDist, confColors))
+      if (stats.conf1Dist.length > 0) confGrid.appendChild(createGaugeChart('Conformité 1ère diffusion', stats.conf1Dist, confColors))
+      if (stats.confDemDist.length > 0) confGrid.appendChild(createGaugeChart('Conformité demande', stats.confDemDist, confColors))
       if (confGrid.children.length > 0) {
         const section = document.createElement('div')
         section.className = 'dash-section'
@@ -1448,8 +1448,8 @@ function renderDashboard(data) {
     if (stats.stockageDist && stats.stockageDist.length > 0 && stats.stockageAdvesoDist && stats.stockageAdvesoDist.length > 0) {
       var stockageGrid = document.createElement('div')
       stockageGrid.className = 'dash-charts-grid'
-      stockageGrid.appendChild(createDonutChart('Stockage DOCINFO', stats.stockageDist.filter(function(d) { return d.count > 0 && d.label.trim() }), stockageColors))
-      stockageGrid.appendChild(createDonutChart('Stockage ADVESO', stats.stockageAdvesoDist.filter(function(d) { return d.count > 0 && d.label.trim() }), stockageColors))
+      stockageGrid.appendChild(createPieChart('Stockage DOCINFO', stats.stockageDist.filter(function(d) { return d.count > 0 && d.label.trim() }), stockageColors))
+      stockageGrid.appendChild(createPieChart('Stockage ADVESO', stats.stockageAdvesoDist.filter(function(d) { return d.count > 0 && d.label.trim() }), stockageColors))
       var stockageSection = document.createElement('div')
       stockageSection.className = 'dash-section'
       stockageSection.innerHTML = '<div class="dash-section-header"><h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Stockage</h3><span class="dash-section-toggle open" id="dash-toggle-stockage">▼</span></div><div class="dash-section-body" id="dash-body-stockage"></div>'
@@ -1467,7 +1467,7 @@ function renderDashboard(data) {
     if (stats.avancementDist.length > 0 && stats.typeDist.length > 0) {
       const chartsGrid = document.createElement('div')
       chartsGrid.className = 'dash-charts-grid'
-      chartsGrid.appendChild(createDonutChart('État d\'avancement', stats.avancementDist, statusColors))
+      chartsGrid.appendChild(createBarChart('État d\'avancement', stats.avancementDist, statusColors))
       chartsGrid.appendChild(createDonutChart('Type de demande', stats.typeDist.slice(0, 8), typeColors))
       statsArea.appendChild(chartsGrid)
     }
@@ -1899,6 +1899,148 @@ function createBarChart(title, data, colorMap) {
   return card
 }
 
+function createGaugeChart(title, data, colorMap) {
+  var card = document.createElement('div')
+  card.className = 'dash-chart-card'
+  card.innerHTML = '<h4>' + title + '</h4>'
+  if (!data || data.length === 0) {
+    card.innerHTML += '<div style="color:var(--clr-text-muted);font-size:var(--text-sm);padding:20px 0;text-align:center">Aucune donn\u00e9e</div>'
+    return card
+  }
+  var total = data.reduce(function(s, d) { return s + d.count }, 0)
+  if (total === 0) {
+    card.innerHTML += '<div style="color:var(--clr-text-muted);font-size:var(--text-sm);padding:20px 0;text-align:center">Aucune donn\u00e9e</div>'
+    return card
+  }
+  var yesEntry = data.find(function(d) { return /oui|conforme/i.test(d.label) })
+  var pct = yesEntry ? Math.round(yesEntry.count / total * 100) : 0
+  var gaugeColor = pct >= 80 ? '#10B981' : pct >= 60 ? '#F59E0B' : '#EF4444'
+
+  var wrap = document.createElement('div')
+  wrap.className = 'dash-gauge-wrap'
+
+  var svgNS = 'http://www.w3.org/2000/svg'
+  var svg = document.createElementNS(svgNS, 'svg')
+  svg.setAttribute('width', '130')
+  svg.setAttribute('height', '80')
+  svg.setAttribute('viewBox', '0 0 130 85')
+  svg.style.flexShrink = '0'
+
+  var cx = 65, cy = 65, r = 44
+
+  var bg = document.createElementNS(svgNS, 'path')
+  bg.setAttribute('d', 'M ' + (cx - r) + ' ' + cy + ' A ' + r + ' ' + r + ' 0 0 1 ' + (cx + r) + ' ' + cy)
+  bg.setAttribute('fill', 'none')
+  bg.setAttribute('stroke', 'var(--clr-border)')
+  bg.setAttribute('stroke-width', '16')
+  bg.setAttribute('stroke-linecap', 'round')
+  svg.appendChild(bg)
+
+  if (pct > 0) {
+    var endAngle = Math.PI * (1 + pct / 100)
+    var endX = cx + r * Math.cos(endAngle)
+    var endY = cy + r * Math.sin(endAngle)
+    var fg = document.createElementNS(svgNS, 'path')
+    fg.setAttribute('d', 'M ' + (cx - r) + ' ' + cy + ' A ' + r + ' ' + r + ' 0 0 1 ' + endX.toFixed(2) + ' ' + endY.toFixed(2))
+    fg.setAttribute('fill', 'none')
+    fg.setAttribute('stroke', gaugeColor)
+    fg.setAttribute('stroke-width', '16')
+    fg.setAttribute('stroke-linecap', 'round')
+    svg.appendChild(fg)
+  }
+
+  var txt = document.createElementNS(svgNS, 'text')
+  txt.setAttribute('x', cx)
+  txt.setAttribute('y', cy + 16)
+  txt.setAttribute('text-anchor', 'middle')
+  txt.setAttribute('font-size', '28')
+  txt.setAttribute('font-weight', '800')
+  txt.setAttribute('fill', 'var(--clr-text-primary)')
+  txt.innerHTML = pct + '%'
+  svg.appendChild(txt)
+
+  wrap.appendChild(svg)
+
+  var legend = document.createElement('div')
+  legend.className = 'dash-donut-legend'
+  data.forEach(function(item) {
+    var ipct = Math.round(item.count / total * 100)
+    var isGreen = /oui|conforme/i.test(item.label)
+    var color = typeof colorMap === 'function' ? colorMap(item.label) : (colorMap[item.label] || (isGreen ? '#16A34A' : '#DC2626'))
+    var row = document.createElement('div')
+    row.className = 'dash-donut-row'
+    row.innerHTML = '<span class="dash-donut-dot" style="background:' + color + '"></span><span class="dash-donut-lbl">' + esc(item.label) + '</span><span class="dash-donut-pct">' + ipct + '%</span><span class="dash-donut-cnt">' + item.count + '</span>'
+    legend.appendChild(row)
+  })
+  wrap.appendChild(legend)
+  card.appendChild(wrap)
+  return card
+}
+
+function createPieChart(title, data, colorMap) {
+  var card = document.createElement('div')
+  card.className = 'dash-chart-card'
+  card.innerHTML = '<h4>' + title + '</h4>'
+  if (!data || data.length === 0) {
+    card.innerHTML += '<div style="color:var(--clr-text-muted);font-size:var(--text-sm);padding:20px 0;text-align:center">Aucune donn\u00e9e</div>'
+    return card
+  }
+  var total = data.reduce(function(s, d) { return s + d.count }, 0)
+  if (total === 0) {
+    card.innerHTML += '<div style="color:var(--clr-text-muted);font-size:var(--text-sm);padding:20px 0;text-align:center">Aucune donn\u00e9e</div>'
+    return card
+  }
+  var wrap = document.createElement('div')
+  wrap.className = 'dash-donut-wrap'
+
+  var svgNS = 'http://www.w3.org/2000/svg'
+  var svg = document.createElementNS(svgNS, 'svg')
+  svg.setAttribute('width', '110')
+  svg.setAttribute('height', '110')
+  svg.setAttribute('viewBox', '0 0 100 100')
+  svg.style.flexShrink = '0'
+
+  var cx = 50, cy = 50, r = 40
+  var startAngle = -Math.PI / 2
+
+  data.forEach(function(item) {
+    var pct = item.count / total
+    var endAngle = startAngle + pct * 2 * Math.PI
+    var color = typeof colorMap === 'function' ? colorMap(item.label) : (colorMap[item.label] || '#0A66C2')
+
+    var x1 = cx + r * Math.cos(startAngle)
+    var y1 = cy + r * Math.sin(startAngle)
+    var x2 = cx + r * Math.cos(endAngle)
+    var y2 = cy + r * Math.sin(endAngle)
+    var largeArc = pct > 0.5 ? 1 : 0
+
+    var path = document.createElementNS(svgNS, 'path')
+    path.setAttribute('d', 'M ' + cx + ' ' + cy + ' L ' + x1.toFixed(2) + ' ' + y1.toFixed(2) + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + x2.toFixed(2) + ' ' + y2.toFixed(2) + ' Z')
+    path.setAttribute('fill', color)
+    path.setAttribute('stroke', '#fff')
+    path.setAttribute('stroke-width', '1.5')
+    svg.appendChild(path)
+
+    startAngle = endAngle
+  })
+
+  wrap.appendChild(svg)
+
+  var legend = document.createElement('div')
+  legend.className = 'dash-donut-legend'
+  data.forEach(function(item) {
+    var pct = Math.round(item.count / total * 100)
+    var color = typeof colorMap === 'function' ? colorMap(item.label) : (colorMap[item.label] || '#0A66C2')
+    var row = document.createElement('div')
+    row.className = 'dash-donut-row'
+    row.innerHTML = '<span class="dash-donut-dot" style="background:' + color + '"></span><span class="dash-donut-lbl">' + esc(item.label) + '</span><span class="dash-donut-pct">' + pct + '%</span><span class="dash-donut-cnt">' + item.count + '</span>'
+    legend.appendChild(row)
+  })
+  wrap.appendChild(legend)
+  card.appendChild(wrap)
+  return card
+}
+
 function renderMonthlyChart(monthlyData) {
   const container = document.createElement('div')
   container.className = 'dash-monthly'
@@ -2098,6 +2240,7 @@ function renderDataTable(headers, items, stats, statusField) {
   const dateTraitField = h('Date de traitement IMMEIT')
 
   const displayFields = [
+    { key: '_row', label: '#' },
     { key: dateField, label: 'Dépôt' },
     { key: siteField, label: 'Site' },
     { key: demandeurField, label: 'Demandeur' },
@@ -2125,7 +2268,7 @@ function renderDataTable(headers, items, stats, statusField) {
   const rowsHtml = pageItems.map(item => {
     const status = (getCellValue(item, statusField) || '').toLowerCase().replace(/[\s\-]+/g, '-')
     const cells = displayFields.map(f => {
-      const val = getCellValue(item, f.key)
+      const val = String(getCellValue(item, f.key))
       const displayVal = val.length > 60 ? val.slice(0, 60) + '\u2026' : val
       if (f.key === statusField) {
         return '<td><span' + (status ? ' class="dash-badge dash-st-' + status + '"' : '') + '>' + esc(displayVal || '\u2014') + '</span></td>'

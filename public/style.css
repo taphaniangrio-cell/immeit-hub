@@ -2022,6 +2022,14 @@ button:disabled {
   text-align: right;
 }
 
+/* ── Gauge Chart ── */
+.dash-gauge-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+
 /* ── Monthly Chart ── */
 .dash-monthly {
   display: flex;
