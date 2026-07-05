@@ -13,8 +13,7 @@
     "@azure/identity": "^4.13.1",
     "@azure/identity-broker": "^1.4.0",
     "@neondatabase/serverless": "^0.10.0",
-    "bcryptjs": "^3.0.3",
-    "nodemailer": "^9.0.3"
+    "bcryptjs": "^3.0.3"
   },
   "repository": {
     "type": "git",
