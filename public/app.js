@@ -1723,7 +1723,7 @@ function renderDashboard(data) {
 }
 
 function computeClientStats(headers, items) {
-  const norm = x => x.toLowerCase().replace(/[\s\/]+/g, '_').replace(/[^a-z0-9_]/g, '')
+  const norm = x => x.trim().toLowerCase().replace(/[\s\/]+/g, '_').replace(/[^a-z0-9_]/g, '')
   const h = name => {
     const n = norm(name)
     const match = headers.find(x => norm(x) === n || x === name)
@@ -1838,10 +1838,8 @@ function computeClientStats(headers, items) {
     stockageAdvesoDist: toDist(groups.stockageAdv),
     duree: delaiStats(delais.duree),
     echeance: delaiStats(delais.echeance),
-    ecart: delaiStats(ecarts),
-    monthlyTrend: Object.entries(monthlyTrend)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, count]) => ({ month, count })),
+    ecart: delaiStats(delais.ecart),
+    monthlyTrend: sortedMonthly,
   }
 }
 
@@ -2205,7 +2203,7 @@ function createLineChart(title, data) {
 var _dashTableState = {}
 
 function renderDataTable(headers, items, stats, statusField) {
-  const norm = x => x.toLowerCase().replace(/[\s\/]+/g, '_').replace(/[^a-z0-9_]/g, '')
+  const norm = x => x.trim().toLowerCase().replace(/[\s\/]+/g, '_').replace(/[^a-z0-9_]/g, '')
   const h = name => {
     const n = norm(name)
     const match = headers.find(x => norm(x) === n || x === name)
