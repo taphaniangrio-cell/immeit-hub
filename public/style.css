@@ -1670,18 +1670,18 @@ button:disabled {
 }
 
 .dashboard__title-bar-text {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--clr-text);
   letter-spacing: -.01em;
 }
 
 .dashboard__title-bar-year {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   color: #fff;
   background: var(--clr-navy);
-  padding: 2px 12px;
+  padding: 3px 14px;
   border-radius: var(--radius-pill);
   letter-spacing: .04em;
 }
