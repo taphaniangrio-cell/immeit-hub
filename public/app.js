@@ -1601,16 +1601,14 @@ function renderDashboard(data) {
       const list = document.createElement('div')
       list.className = 'dash-bar-list'
       const maxDem = Math.max(...stats.topDemandeurs.map(d => d.count), 1)
-      stats.topDemandeurs.forEach(item => {
-        const pct = (item.count / maxDem) * 100
-        const bar = document.createElement('div')
+      var _demCount = stats.topDemandeurs.length
+      stats.topDemandeurs.forEach(function(item, idx) {
+        var pct = (item.count / maxDem) * 100
+        var h = 215 - (idx / Math.max(_demCount - 1, 1)) * 80
+        var l = 42 + (idx / Math.max(_demCount - 1, 1)) * 28
+        var bar = document.createElement('div')
         bar.className = 'dash-bar-item'
-        bar.innerHTML = `
-          <div class="dash-bar-header">
-            <span class="dash-bar-label">${esc(item.label)}</span>
-            <span class="dash-bar-count">${item.count}</span>
-          </div>
-          <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${pct}%;background:#0A66C2"></div></div>`
+        bar.innerHTML = '<div class="dash-bar-header"><span class="dash-bar-label">' + esc(item.label) + '</span><span class="dash-bar-count">' + item.count + '</span></div><div class="dash-bar-track"><div class="dash-bar-fill" style="width:' + pct + '%;background:hsl(' + h + ',80%,' + l + '%)"></div></div>'
         list.appendChild(bar)
       })
       demSection.querySelector('.dash-section-body').appendChild(list)
