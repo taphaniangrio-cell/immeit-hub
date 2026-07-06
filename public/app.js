@@ -1938,7 +1938,7 @@ const natureColors = {
   'GMAO': '#6366F1',
 }
 
-const siteColors = ['#E11D48', '#DC2626', '#EA580C', '#D97706', '#F59E0B', '#16A34A', '#65A30D', '#7C3AED', '#BE123C', '#EC4899']
+const siteColors = ['#DC2626', '#0D9488', '#16A34A', '#F59E0B', '#7C3AED', '#EA580C', '#65A30D', '#EC4899', '#D97706', '#BE123C']
 
 const typeColors = ['#2563EB', '#DC2626', '#16A34A', '#F59E0B', '#9333EA', '#0D9488', '#EC4899', '#D97706', '#0891B2', '#6366F1']
 
