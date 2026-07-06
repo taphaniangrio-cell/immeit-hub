@@ -2143,10 +2143,10 @@ function createDonutChart(title, data, colorMap) {
   const cx = 50, cy = 50, r = 38, sw = 17
   const circ = 2 * Math.PI * r
   let offset = 0
-  data.forEach(item => {
+  data.forEach((item, idx) => {
     const pct = item.count / total
     const len = pct * circ
-    const color = typeof colorMap === 'function' ? colorMap(item.label) : (colorMap[item.label] || '#0A66C2')
+    const color = typeof colorMap === 'function' ? colorMap(item.label) : Array.isArray(colorMap) ? (colorMap[idx] || '#64748B') : (colorMap[item.label] || '#64748B')
     const circle = document.createElementNS(svgNS, 'circle')
     circle.setAttribute('cx', cx)
     circle.setAttribute('cy', cy)
@@ -2172,9 +2172,9 @@ function createDonutChart(title, data, colorMap) {
   wrap.appendChild(svg)
   const legend = document.createElement('div')
   legend.className = 'dash-donut-legend'
-  data.forEach(item => {
+  data.forEach((item, idx) => {
     const pct = Math.round(item.count / total * 100)
-    const color = typeof colorMap === 'function' ? colorMap(item.label) : (colorMap[item.label] || '#0A66C2')
+    const color = typeof colorMap === 'function' ? colorMap(item.label) : Array.isArray(colorMap) ? (colorMap[idx] || '#64748B') : (colorMap[item.label] || '#64748B')
     const row = document.createElement('div')
     row.className = 'dash-donut-row'
     row.innerHTML = `
