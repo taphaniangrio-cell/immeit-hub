@@ -1717,10 +1717,15 @@ button:disabled {
   transition: all .15s;
   letter-spacing: .02em;
 }
-.dash-action-btn--reset:hover {
+.dash-action-btn--reset:enabled {
   border-color: #e2c8c8;
   color: #b33;
   background: #fef2f2;
+}
+.dash-action-btn--reset:hover {
+  border-color: #d4a0a0;
+  color: #922;
+  background: #fce8e8;
 }
 .dash-action-btn.syncing {
   opacity: .5;
