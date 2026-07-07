@@ -1212,6 +1212,7 @@ async function loadDashboard() {
     const data = await api('/dashboard')
     window._dashLastLoaded = Date.now()
     window._lastSyncTime = Date.now()
+    window._dashLastData = data
     try { localStorage.setItem('immeit_dash_cache', JSON.stringify(Object.assign(data, { _cachedAt: Date.now() }))) } catch {}
     renderDashboard(data)
     updateDashInfo()
@@ -1259,8 +1260,14 @@ async function handleDashRefresh() {
   if (!btn || btn.classList.contains('syncing')) return
   btn.classList.add('syncing')
   try {
-    await loadDashboard()
-    showToast('Données actualisées ✓', 'success')
+    if (window._dashLastData) {
+      renderDashboard(window._dashLastData)
+      updateDashInfo()
+      showToast('Affichage rafraîchi ✓', 'success', 1500)
+    } else {
+      await loadDashboard()
+      showToast('Données actualisées ✓', 'success')
+    }
   } catch (err) {
     showToast('Erreur: ' + err.message, 'error')
   } finally {
