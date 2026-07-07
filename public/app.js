@@ -1869,13 +1869,18 @@ function renderDashboard(data) {
     var ds = dsVal ? new Date(dsVal + 'T00:00:00') : null
     var de = deVal ? new Date(deVal + 'T23:59:59') : null
     var _demFilter = window._dashDemandeurFilter ? _norm(window._dashDemandeurFilter) : ''
+    var _dHdr = null
+    if (_demFilter) {
+      var _n2 = function(s) { return s.trim().toLowerCase().replace(/[\s\/]+/g, '_').replace(/[^a-z0-9_]/g, '') }
+      _dHdr = _baseHeaders.find(function(x) { return _n2(x) === 'demandeurs' || _n2(x) === 'demandeur' || x === 'Demandeurs' || x === 'Demandeur' })
+        || _baseHeaders.find(function(x) { return _n2(x).includes('demand') && !_n2(x).includes('type') && !_n2(x).includes('groupe') && !_n2(x).includes('categorie') })
+    }
     var filtered = _baseItems.filter(function(item) {
       var st = _norm((item[gpStatusField] || '').toLowerCase())
       if (stVal && st !== stVal) return false
       if (_demFilter) {
-        var _demHdr = _baseHeaders.find(function(x) { return x.toLowerCase().includes('demandeur') })
-        if (_demHdr) {
-          if (!_norm((item[_demHdr] || '').toLowerCase()).includes(_demFilter)) return false
+        if (_dHdr) {
+          if (!_norm((item[_dHdr] || '').toLowerCase()).includes(_demFilter)) return false
         } else {
           var _fallback = _norm(Object.values(item).join(' ').toLowerCase())
           if (!_fallback.includes(_demFilter)) return false
