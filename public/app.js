@@ -1210,6 +1210,7 @@ async function loadDashboard() {
 
   try {
     const data = await api('/dashboard')
+    window._dashLastLoaded = Date.now()
     window._lastSyncTime = Date.now()
     try { localStorage.setItem('immeit_dash_cache', JSON.stringify(Object.assign(data, { _cachedAt: Date.now() }))) } catch {}
     renderDashboard(data)
@@ -1328,6 +1329,7 @@ function connectSSE() {
         var _syncEl = document.getElementById('btn-dash-sync')
         var _refEl = document.getElementById('btn-dash-refresh')
         if ((_syncEl && _syncEl.classList.contains('syncing')) || (_refEl && _refEl.classList.contains('syncing'))) return
+        if (Date.now() - (window._dashLastLoaded || 0) < 3000) return
         if (_dashHasActiveFilters()) {
           window._dashNeedsRefresh = true
           showToast('📊 Nouvelles données disponibles — réinitialise les filtres pour voir', 'info', 3000)
