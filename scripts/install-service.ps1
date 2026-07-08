@@ -1,86 +1,88 @@
 #!/usr/bin/env pwsh
-param(
-    [switch]$Install,
-    [switch]$Uninstall,
-    [switch]$Status
-)
+<#
+.SYNOPSIS
+  IMMEIT Hub — Installation/Désinstallation du démarrage automatique (Registry Run)
+.DESCRIPTION
+  Ajoute IMMEIT Hub au démarrage de Windows (HKCU:\...\Run).
+  Le serveur démarre automatiquement à chaque connexion utilisateur.
+  Le navigateur s'ouvre automatiquement dès que le serveur est prêt (health check).
+  Aucune intervention manuelle nécessaire après installation.
+.PARAMETER Install
+  Installe le démarrage automatique et lance le serveur maintenant
+.PARAMETER Uninstall
+  Supprime le démarrage automatique et arrête le serveur
+.PARAMETER Status
+  Vérifie l'état de l'installation et du serveur
+#>
+param([switch]$Install, [switch]$Uninstall, [switch]$Status)
 
 $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 $regName = "IMMEIT-Hub"
-$projectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Definition)
-$serverScript = Join-Path $projectRoot "server.mjs"
-$logDir = Join-Path $env:TEMP "IMMEIT-Hub"
-$logFile = Join-Path $logDir "server-out.log"
-$logErrFile = Join-Path $logDir "server-err.log"
-$launcherFile = Join-Path $projectRoot "scripts\launcher.ps1"
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$projectRoot = Split-Path -Parent $scriptPath
+$launcher = Join-Path $projectRoot "start.ps1"
 
 if ($Uninstall) {
-    Write-Host "> Suppression du demarrage automatique..."
-    try { Remove-ItemProperty -Path $regPath -Name $regName -ErrorAction Stop; Write-Host "> Fait." } catch { Write-Host "> Aucune entree trouvee." }
-    try { $p = Get-CimInstance -ClassName Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match "server.mjs" }; if ($p) { $p | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Write-Host "> Serveur arrete." } } catch {}
-    exit 0
+  Write-Host "> Suppression du demarrage automatique..."
+  try { Remove-ItemProperty -Path $regPath -Name $regName -ErrorAction Stop; Write-Host "> Fait." } catch { Write-Host "> Aucune entree trouvee." }
+  Get-CimInstance -ClassName Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match "server.mjs" } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+  Write-Host "> Serveur arrete."
+  exit 0
 }
 
 if ($Status) {
-    $regVal = Get-ItemProperty -Path $regPath -Name $regName -ErrorAction SilentlyContinue
-    if ($regVal) { Write-Host "> Demarrage automatique : INSTALLE" } else { Write-Host "> Demarrage automatique : NON INSTALLE" }
-    $proc = Get-CimInstance -ClassName Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match "server.mjs" } | Select-Object -First 1
-    if ($proc) {
-        $elapsed = [math]::Round(((Get-Date) - $proc.CreationDate).TotalMinutes)
-        Write-Host "> Serveur en cours : PID $($proc.ProcessId) (actif depuis ${elapsed} min)"
-    } else {
-        Write-Host "> Serveur en cours : ARRETE"
-    }
-    exit 0
+  $regVal = Get-ItemProperty -Path $regPath -Name $regName -ErrorAction SilentlyContinue
+  if ($regVal) { Write-Host "> Demarrage automatique : INSTALLE" } else { Write-Host "> Demarrage automatique : NON INSTALLE" }
+  $proc = Get-CimInstance -ClassName Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match "server.mjs" } |
+    Select-Object -First 1
+  if ($proc) {
+    $elapsed = [math]::Round(((Get-Date) - $proc.CreationDate).TotalMinutes)
+    Write-Host "> Serveur en cours : PID $($proc.ProcessId) (actif depuis ${elapsed} min)"
+    try {
+      $r = Invoke-WebRequest -Uri "http://localhost:3000/api/health" -UseBasicParsing -TimeoutSec 3
+      if ($r.StatusCode -eq 200) { Write-Host "> Health check : OK" }
+    } catch { Write-Host "> Health check : PAS DE REPONSE" }
+  } else { Write-Host "> Serveur en cours : ARRETE" }
+  exit 0
 }
 
 if ($Install) {
-    Write-Host "> Installation du demarrage automatique..."
+  Write-Host "> Installation du demarrage automatique..."
 
-    # Creer le launcher silencieux
-    if (-not (Test-Path $launcherFile)) {
-        @"
-`$projectRoot = "$($projectRoot -replace '\\', '\\')"
-`$serverScript = "$($serverScript -replace '\\', '\\')"
-Start-Process -FilePath "node" -ArgumentList "`$serverScript" -WorkingDirectory "`$projectRoot" -WindowStyle Hidden
-"@ | Set-Content -Path $launcherFile -Encoding ASCII
-    }
-    Write-Host "> Launcher cree : $launcherFile"
+  # Verifier que le launcher existe
+  if (-not (Test-Path $launcher)) { Write-Host "[ERREUR] $launcher introuvable"; exit 1 }
 
-    # Ajouter au registre (demarrage connexion utilisateur)
-    $cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File `"$launcherFile`""
-    try {
-        Set-ItemProperty -Path $regPath -Name $regName -Value $cmd -Type String -ErrorAction Stop
-        Write-Host "> Ajoute au demarrage Windows (Registry Run)"
-    } catch {
-        Write-Host "[ERREUR] Echec ecriture registre: $($_.Exception.Message)"
-        exit 1
-    }
+  # Ajouter au registre : start.ps1 gere tout (health check + ouverture navigateur)
+  $cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File `"$launcher`""
+  try {
+    Set-ItemProperty -Path $regPath -Name $regName -Value $cmd -Type String -ErrorAction Stop
+    Write-Host "> Ajoute au demarrage Windows (HKCU\...\Run)"
+  } catch { Write-Host "[ERREUR] Echec ecriture registre: $($_.Exception.Message)"; exit 1 }
 
-    # Demarrer le serveur maintenant (Hidden sans redirection — le logger interne suffit)
-    Write-Host "> Demarrage du serveur..."
-    try {
-        Start-Process -FilePath "node" -ArgumentList "`"$serverScript`"" -WorkingDirectory $projectRoot -WindowStyle Hidden
-        Start-Sleep -Seconds 4
-        # Verifier avec l'API health au lieu du process
-        try {
-            $r = Invoke-WebRequest -Uri "http://localhost:3000/api/health" -UseBasicParsing -TimeoutSec 3
-            if ($r.StatusCode -eq 200) {
-                Write-Host "> Serveur lance. http://localhost:3000"
-            }
-        } catch {
-            Write-Host "[AVERTISSEMENT] Le serveur semble ne pas repondre. Logs dans le dossier .immeit-logs/"
-        }
-    } catch {
-        Write-Host "[ERREUR] Impossible de demarrer : $($_.Exception.Message)"
-    }
-    exit 0
+  # Demarrer le serveur maintenant
+  Write-Host "> Demarrage du serveur..."
+  Start-Process -FilePath "powershell" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$launcher`"" -WindowStyle Hidden
+  Start-Sleep -Seconds 5
+  try {
+    $r = Invoke-WebRequest -Uri "http://localhost:3000/api/health" -UseBasicParsing -TimeoutSec 3
+    if ($r.StatusCode -eq 200) { Write-Host "> Serveur lance sur http://localhost:3000" }
+  } catch { Write-Host "> Serveur en cours de demarrage (health check pas encore pret)" }
+
+  Write-Host "> Termine. Le navigateur s'ouvrira automatiquement dans quelques secondes."
+  exit 0
 }
 
 # Aide
 Write-Host ""
-Write-Host "  IMMEIT Hub - Installation demarrage automatique"
-Write-Host "  =============================================="
+Write-Host "  IMMEIT Hub - Demarrage automatique Windows"
+Write-Host "  =========================================="
+Write-Host ""
+Write-Host "  Le serveur demarre automatiquement a chaque connexion."
+Write-Host "  Le navigateur s'ouvre des que le serveur est pret."
+Write-Host "  Aucune intervention necessaire."
 Write-Host ""
 Write-Host "  Usage :"
 Write-Host "    powershell -File scripts\install-service.ps1 -Install     Installer"
