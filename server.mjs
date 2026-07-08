@@ -36,11 +36,23 @@ const health = { pid: process.pid, port: null };
 function openBrowser(url) {
   const platform = process.platform;
   if (platform === 'win32') {
-    spawn('cmd', ['/c', 'start', url], { detached: true, stdio: 'ignore' });
+    // Méthode 1 : cmd /c start avec titre explicite (évite l'ambiguïté URL vs titre)
+    try {
+      const p = spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore', windowsHide: false });
+      p.unref();
+      return;
+    } catch {}
+    // Méthode 2 : PowerShell Start-Process (fallback)
+    try {
+      const p = spawn('powershell', ['-NoProfile', '-Command', `Start-Process '${url}'`], { detached: true, stdio: 'ignore' });
+      p.unref();
+    } catch {
+      console.error('[BROWSER] Ouvre manuellement :', url);
+    }
   } else if (platform === 'darwin') {
-    spawn('open', [url], { detached: true, stdio: 'ignore' });
+    spawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
   } else {
-    spawn('xdg-open', [url], { detached: true, stdio: 'ignore' });
+    spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref();
   }
 }
 

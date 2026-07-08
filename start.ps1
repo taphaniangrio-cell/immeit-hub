@@ -1,105 +1,113 @@
 #!/usr/bin/env pwsh
-param(
-    [string]$Port = "3000",
-    [switch]$NoBrowser
-)
+<#
+.SYNOPSIS
+  IMMEIT Hub — Lanceur universel
+.DESCRIPTION
+  - Si le serveur tourne deja : ouvre le navigateur
+  - Sinon : demarre le serveur dans la console courante, attend le health check,
+    ouvre le navigateur, puis reste actif jusqu'a l'arret du serveur
+.PARAMETER NoBrowser
+  N'ouvre pas le navigateur (mode service/headless)
+#>
+param([switch]$NoBrowser)
 
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ServerScript = Join-Path $ProjectRoot "server.mjs"
-$LogFile = Join-Path $env:TEMP "immeit-server.log"
+$Url = "http://localhost:3000"
 
-Write-Host ""
-Write-Host " >>> IMMEIT Hub — Démarrage du serveur local" -ForegroundColor Cyan
-Write-Host ""
-
-# Check node
+# ── Verifications ──
 $nodeVer = node --version 2>$null
 if (-not $nodeVer) {
-    Write-Host "[ERREUR] Node.js n'est pas installé." -ForegroundColor Red
-    pause
-    exit 1
+  Write-Host "[ERREUR] Node.js n'est pas installe." -ForegroundColor Red
+  pause; exit 1
 }
-
-# Check/install deps
+if (-not (Test-Path $ServerScript)) {
+  Write-Host "[ERREUR] server.mjs introuvable" -ForegroundColor Red
+  pause; exit 1
+}
 if (-not (Test-Path (Join-Path $ProjectRoot "node_modules"))) {
-    Write-Host "[INFO] Installation des dépendances..."
-    Push-Location $ProjectRoot
-    npm install
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[ERREUR] npm install a échoué" -ForegroundColor Red
-        pause
-        exit 1
-    }
-    Pop-Location
+  Write-Host "[INFO] Installation des dependances..." -ForegroundColor Yellow
+  Push-Location $ProjectRoot
+  npm install --loglevel=error
+  if ($LASTEXITCODE -ne 0) { Write-Host "[ERREUR] npm install echoue" -ForegroundColor Red; pause; exit 1 }
+  Pop-Location
 }
-
-# Create .env if needed
 if (-not (Test-Path (Join-Path $ProjectRoot ".env"))) {
+  if (Test-Path (Join-Path $ProjectRoot ".env.example")) {
     Copy-Item (Join-Path $ProjectRoot ".env.example") (Join-Path $ProjectRoot ".env")
-    Write-Host "[INFO] Fichier .env créé — configure tes clés API" -ForegroundColor Yellow
+    Write-Host "[INFO] .env cree -- configure tes cles API" -ForegroundColor Yellow
+  }
 }
 
-# Kill existing process on port
-$existing = netstat -ano | findstr ":$Port "
-if ($existing) {
-    $oldPid = ($existing.Trim() -split '\s+')[-1]
-    Write-Host "[INFO] Ancien processus sur le port $Port (PID $oldPid) — arrêt..."
-    try { Stop-Process -Id $oldPid -Force -ErrorAction SilentlyContinue } catch {}
-    Start-Sleep -Seconds 1
+# ── Health check helper ──
+function Test-ServerRunning {
+  try { $r = Invoke-WebRequest -Uri "$Url/api/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop; return $r.StatusCode -eq 200 }
+  catch { return $false }
 }
 
-# Start server in background
-Write-Host "[INFO] Démarrage du serveur..."
-$psi = New-Object System.Diagnostics.ProcessStartInfo
-$psi.FileName = "node"
-$psi.Arguments = "server.mjs"
-$psi.WorkingDirectory = $ProjectRoot
-$psi.UseShellExecute = $false
-$psi.RedirectStandardOutput = $true
-$psi.RedirectStandardError = $true
-$psi.CreateNoWindow = $true
-$psi.EnvironmentVariables["PORT"] = $Port
-$process = New-Object System.Diagnostics.Process
-$process.StartInfo = $psi
-$process.Start() | Out-Null
+# ── Si deja en cours, on ouvre juste le navigateur ──
+if (Test-ServerRunning) {
+  Write-Host "[OK] Serveur deja en cours d'execution sur $Url" -ForegroundColor Green
+  if (-not $NoBrowser) { Start-Process $Url }
+  exit 0
+}
 
-# Wait for server to be ready (up to 20 seconds)
-Write-Host "[INFO] Attente du démarrage..." -NoNewline
+# ── Nettoyer les anciens processus ──
+try {
+  $connections = netstat -ano | Select-String ":3000\s"
+  foreach ($conn in $connections) {
+    $parts = $conn.ToString().Trim() -split '\s+'
+    $pid = $parts[-1]
+    if ($pid -and $pid -ne '0') {
+      $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
+      if ($proc -and $proc.ProcessName -eq 'node') {
+        Write-Host "[INFO] Ancien processus sur le port 3000 (PID $pid) -- arret..." -ForegroundColor Yellow
+        Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+      }
+    }
+  }
+} catch {}
+
+# ── Demarrer le serveur dans la console courante ──
+Write-Host ""
+Write-Host ">>> IMMEIT Hub -- Demarrage du serveur local" -ForegroundColor Cyan
+Write-Host ""
+
+$serverProcess = Start-Process -FilePath "node" -ArgumentList "server.mjs" `
+  -WorkingDirectory $ProjectRoot -NoNewWindow -PassThru
+
+# ── Attendre le health check (max 30s) ──
+Write-Host "[INFO] Attente du demarrage" -NoNewline
 $ready = $false
-for ($i = 1; $i -le 20; $i++) {
-    Start-Sleep -Seconds 1
-    Write-Host "." -NoNewline
-    try {
-        $r = Invoke-WebRequest -Uri "http://localhost:$Port/api/health" -UseBasicParsing -TimeoutSec 2
-        if ($r.StatusCode -eq 200) { $ready = $true; break }
-    } catch {}
+for ($i = 1; $i -le 30; $i++) {
+  Start-Sleep -Seconds 1
+  Write-Host "." -NoNewline
+  if (Test-ServerRunning) { $ready = $true; break }
 }
 Write-Host ""
 
 if (-not $ready) {
-    Write-Host ""
-    Write-Host "[ERREUR] Le serveur n'a pas démarré après 20 secondes." -ForegroundColor Red
-    Write-Host "        Voir les logs dans le fichier : $LogFile" -ForegroundColor Red
-    try { $process.Kill() } catch {}
-    pause
-    exit 1
+  Write-Host "[ERREUR] Le serveur n'a pas demarre apres 30 secondes." -ForegroundColor Red
+  try { $serverProcess.Kill() } catch {}
+  pause; exit 1
 }
 
-Write-Host "[OK] Serveur prêt !" -ForegroundColor Green
+Write-Host "[OK] Serveur pret sur $Url" -ForegroundColor Green
 
+# ── Ouvrir le navigateur ──
 if (-not $NoBrowser) {
-    Start-Process "http://localhost:$Port"
+  Write-Host "-> Ouverture du navigateur..." -ForegroundColor Cyan
+  Start-Process $Url
 }
 
 Write-Host ""
-Write-Host " ================================================" -ForegroundColor Cyan
-Write-Host "   IMMEIT Hub est en cours d'exécution" -ForegroundColor White
-Write-Host "   App   : http://localhost:$Port" -ForegroundColor White
-Write-Host "   Arrêt : ferme cette fenêtre ou Ctrl+C" -ForegroundColor White
-Write-Host " ================================================" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host " IMMEIT Hub est en cours d'execution" -ForegroundColor White
+Write-Host " App   : $Url" -ForegroundColor White
+Write-Host " Arret : ferme cette fenetre ou Ctrl+C" -ForegroundColor White
+Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Wait for process to exit
-try {
-    $process.WaitForExit()
-} catch {}
+# ── Attendre la fin du processus ──
+try { $serverProcess.WaitForExit() } catch {}
