@@ -30,10 +30,10 @@ module.exports = requireAuth(async (req, res) => {
       }
     }
 
-    // 2) Fallback: try auto-sync (InteractiveBrowserCredential with timeout)
+    // 2) Fallback: try auto-sync (DeviceCodeCredential — local dev)
     if (!sharepointData || !sharepointData.connected) {
       try {
-        var autoData = await timeoutPromise(autoSync.fetchSharePointData(), FETCH_TIMEOUT)
+        var autoData = await autoSync.fetchSharePointData()
         if (autoData && autoData.items && autoData.items.length > 0) {
           sharepointData = {
             connected: true,

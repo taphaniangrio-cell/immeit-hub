@@ -1,5 +1,5 @@
 const API_BASE = '/api'
-const APP_VERSION = '150'
+const APP_VERSION = '151'
 
 // Force cache invalidation on version change
 ;(() => {
@@ -114,7 +114,8 @@ function getCookie(name) {
 async function api(path, options = {}) {
   const sep = path.includes('?') ? '&' : '?'
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 120_000)
+  const ms = options.timeout || (path.includes('/generate') ? 60000 : 20000)
+  const timeout = setTimeout(() => controller.abort(), ms)
   const headers = { 'Content-Type': 'application/json', ...options.headers }
   const method = (options.method || 'GET').toUpperCase()
   if (method !== 'GET') {
@@ -244,6 +245,12 @@ function renderImages() {
     })
   })
 
+  if (articleImages.length === 0) {
+    selectedImageIndex = -1
+    btnReplaceImage.classList.add('hidden')
+    btnRemoveImage.classList.add('hidden')
+    return
+  }
   if (selectedImageIndex === -1 || selectedImageIndex >= articleImages.length) {
     selectedImageIndex = articleImages.length - 1
     btnReplaceImage.classList.remove('hidden')
@@ -276,40 +283,44 @@ btnReplaceImage.addEventListener('click', () => {
 
 btnRemoveImage.addEventListener('click', removeSelectedImage)
 
-imageSearchInput.addEventListener('input', async () => {
+let _imageSearchTimer
+imageSearchInput.addEventListener('input', () => {
+  clearTimeout(_imageSearchTimer)
   const q = imageSearchInput.value.trim()
   if (q.length < 3) { imageSearchResults.innerHTML = ''; return }
-  try {
-    const data = await api(`/images?query=${encodeURIComponent(q)}`)
-    const photos = data.photos || []
-    if (!photos.length) { imageSearchResults.innerHTML = '<div class="empty">Aucun résultat</div>'; return }
-    imageSearchResults.innerHTML = photos.map(p => `
-      <div class="search-result-item" data-url="${esc(p.url)}" data-thumb="${esc(p.thumbnail)}" data-photographer="${esc(p.photographer)}" data-photographer-url="${esc(p.photographer_url)}" data-alt="${esc(p.alt || '')}">
-        <img src="${esc(p.thumbnail)}" alt="${esc(p.alt || '')}" loading="lazy">
-        <div class="search-result-overlay">+</div>
-      </div>
-    `).join('')
-    imageSearchResults.querySelectorAll('.search-result-item').forEach(el => {
-      el.addEventListener('click', () => {
-        const img = {
-          url: el.dataset.url,
-          thumbnail: el.dataset.thumb,
-          photographer: el.dataset.photographer,
-          photographer_url: el.dataset.photographerUrl,
-          alt: el.dataset.alt,
-        }
-        if (selectedImageIndex >= 0 && selectedImageIndex < articleImages.length) {
-          articleImages[selectedImageIndex] = img
-        } else {
-          articleImages.push(img)
-          selectedImageIndex = articleImages.length - 1
-        }
-        renderImages()
-        imageSearchBox.classList.add('hidden')
-        markDirty()
+  _imageSearchTimer = setTimeout(async () => {
+    try {
+      const data = await api(`/images?query=${encodeURIComponent(q)}`)
+      const photos = data.photos || []
+      if (!photos.length) { imageSearchResults.innerHTML = '<div class="empty">Aucun résultat</div>'; return }
+      imageSearchResults.innerHTML = photos.map(p => `
+        <div class="search-result-item" data-url="${esc(p.url)}" data-thumb="${esc(p.thumbnail)}" data-photographer="${esc(p.photographer)}" data-photographer-url="${esc(p.photographer_url)}" data-alt="${esc(p.alt || '')}">
+          <img src="${esc(p.thumbnail)}" alt="${esc(p.alt || '')}" loading="lazy">
+          <div class="search-result-overlay">+</div>
+        </div>
+      `).join('')
+      imageSearchResults.querySelectorAll('.search-result-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const img = {
+            url: el.dataset.url,
+            thumbnail: el.dataset.thumb,
+            photographer: el.dataset.photographer,
+            photographer_url: el.dataset.photographerUrl,
+            alt: el.dataset.alt,
+          }
+          if (selectedImageIndex >= 0 && selectedImageIndex < articleImages.length) {
+            articleImages[selectedImageIndex] = img
+          } else {
+            articleImages.push(img)
+            selectedImageIndex = articleImages.length - 1
+          }
+          renderImages()
+          imageSearchBox.classList.add('hidden')
+          markDirty()
+        })
       })
-    })
-  } catch { imageSearchResults.innerHTML = '<div class="empty">Erreur réseau</div>' }
+    } catch { imageSearchResults.innerHTML = '<div class="empty">Erreur réseau</div>' }
+  }, 300)
 })
 
 function setArticleImages(images, primaryUrl) {
@@ -532,7 +543,7 @@ async function autoSave() {
 }
 
 window.addEventListener('beforeunload', e => {
-  if (isDirty) e.preventDefault()
+  if (isDirty) e.returnValue = ''
 })
 
 editTitre.addEventListener('input', markDirty)
@@ -610,7 +621,7 @@ function loadArticles() {
     renderArticles()
   }).catch(() => {
     if (seq !== _loadSeq) return
-    articleList.innerHTML = '<div class="empty">Erreur de chargement</div>'
+    articleList.innerHTML = '<div class="empty">Erreur de chargement <button class="btn btn--ghost btn-sm" onclick="loadArticles()">Réessayer</button></div>'
   })
 }
 
@@ -1221,7 +1232,10 @@ function loadCachedDashboard() {
   return false
 }
 
+let _dashLoading = false
 async function loadDashboard() {
+  if (_dashLoading) return
+  _dashLoading = true
   dashLoading.classList.remove('hidden')
   dashError.classList.add('hidden')
 
@@ -1242,6 +1256,7 @@ async function loadDashboard() {
       dashErrorText.textContent = err.message || 'Erreur de chargement du tableau de bord'
     }
   } finally {
+    _dashLoading = false
     dashLoading.classList.add('hidden')
   }
   var _refreshBtn = document.getElementById('btn-dash-refresh')
@@ -1330,7 +1345,7 @@ function startSyncTimer() {
   tick()
   window._syncTimerInterval = setInterval(tick, 5000)
   window._dashPollInterval = setInterval(function() {
-    if (!_dashHasActiveFilters() && Date.now() - (window._dashLastLoaded || 0) > 30000) {
+    if (!_dashHasActiveFilters() && Date.now() - (window._dashLastLoaded || 0) > 120000) {
       loadDashboard()
     }
   }, 30000)
@@ -1377,12 +1392,11 @@ function connectSSE() {
     }
   })
   es.addEventListener('error', function() {
-    if (es.readyState === EventSource.CLOSED) {
-      window._sseConn = null
-      window._sseRetryCount++
-      var delay = Math.min(30000, 1000 * Math.pow(2, window._sseRetryCount))
-      setTimeout(connectSSE, delay)
-    }
+    es.close()
+    window._sseConn = null
+    window._sseRetryCount++
+    var delay = Math.min(30000, 1000 * Math.pow(2, window._sseRetryCount))
+    setTimeout(connectSSE, delay)
   })
   window._sseConn = es
 }
@@ -1391,16 +1405,14 @@ function setupVisibilityRefresh() {
   if (window._visSetup) return
   window._visSetup = true
   document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-      var ds = document.getElementById('dashboard-screen')
-      if (ds && !ds.classList.contains('hidden') && !_dashHasActiveFilters()) {
-        loadDashboard()
-      }
+    if (!document.hidden && window._dashNeedsRefresh && !_dashHasActiveFilters()) {
+      window._dashNeedsRefresh = false
+      loadDashboard()
     }
   })
   window.addEventListener('focus', function() {
-    var ds = document.getElementById('dashboard-screen')
-    if (ds && !ds.classList.contains('hidden') && !_dashHasActiveFilters()) {
+    if (window._dashNeedsRefresh && !_dashHasActiveFilters()) {
+      window._dashNeedsRefresh = false
       loadDashboard()
     }
   })
@@ -1911,6 +1923,43 @@ function renderDashboard(data) {
 
   dashContent.appendChild(filterPanel)
 
+  var chipsBar = document.createElement('div')
+  chipsBar.id = 'dash-filter-chips'
+  chipsBar.className = 'dash-filter-chips'
+  dashContent.appendChild(chipsBar)
+
+  function _dashRenderFilterChips() {
+    chipsBar.innerHTML = ''
+    var chips = []
+    var ff = window._dashFieldFilters || {}
+    for (var fk in ff) {
+      var label = _baseHeaders.find(function(h) { return fk === h.toLowerCase().replace(/[\s\/]+/g, '_').replace(/[^a-z0-9_]/g, '') })
+      chips.push({ type: 'field', label: (label || fk) + ' : ' + ff[fk], remove: function(k) { return function() { delete window._dashFieldFilters[k]; applyGlobalFilters() } }(fk) })
+    }
+    if (statusSel && statusSel.value) {
+      chips.push({ type: 'status', label: 'Statut : ' + statusSel.value, remove: function() { statusSel.value = ''; applyGlobalFilters() } })
+    }
+    if (searchInput && searchInput.value.trim()) {
+      chips.push({ type: 'search', label: 'Recherche : "' + searchInput.value.trim() + '"', remove: function() { searchInput.value = ''; applyGlobalFilters() } })
+    }
+    if (dateStartVal || dateEndVal) {
+      var dLabel = 'Période'
+      if (dateStartVal && dateEndVal) dLabel += ' : ' + dateStartVal + ' → ' + dateEndVal
+      else if (dateStartVal) dLabel += ' : depuis ' + dateStartVal
+      else dLabel += ' : jusqu\'à ' + dateEndVal
+      chips.push({ type: 'date', label: dLabel, remove: function() { if (startInput) { startInput.value = minDateStr || (new Date().getFullYear() + '-01-01'); dateStartVal = startInput.value }; if (endInput) { endInput.value = todayStr; dateEndVal = endInput.value }; applyGlobalFilters() } })
+    }
+    if (chips.length === 0) { chipsBar.classList.add('hidden'); return }
+    chipsBar.classList.remove('hidden')
+    for (var i = 0; i < chips.length; i++) {
+      var c = document.createElement('span')
+      c.className = 'dash-filter-chip dash-filter-chip--' + chips[i].type
+      c.innerHTML = '<span class="dash-filter-chip-label">' + esc(chips[i].label) + '</span><button class="dash-filter-chip-remove" title="Retirer ce filtre">&times;</button>'
+      c.querySelector('.dash-filter-chip-remove').onclick = chips[i].remove
+      chipsBar.appendChild(c)
+    }
+  }
+
   var tableCard
   var statusSel = filterPanel.querySelector('#dash-filter-global-status')
   var searchInput = filterPanel.querySelector('#dash-filter-global-search')
@@ -1950,6 +1999,7 @@ function renderDashboard(data) {
     var newStats = computeClientStats(_baseHeaders, filtered)
     buildStatsSections(newStats, filtered)
     renderFilteredTable(filtered, newStats)
+    _dashRenderFilterChips()
     _dashUpdateResetBtn()
   }
 
@@ -2608,12 +2658,12 @@ function formatDateCell(val) {
 }
 
 // INIT
-async function init() {
+function init() {
   if (hasSession()) {
-    await loadAvailableModels()
     var lastView = localStorage.getItem('immeit_last_view')
     if (lastView === 'dashboard') showDashboard()
     else showMain()
+    loadAvailableModels()
   } else showLogin()
 }
 
