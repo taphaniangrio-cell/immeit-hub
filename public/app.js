@@ -1,5 +1,5 @@
 const API_BASE = '/api'
-const APP_VERSION = '151'
+const APP_VERSION = '154'
 
 // Force cache invalidation on version change
 ;(() => {
@@ -1231,10 +1231,15 @@ function loadCachedDashboard() {
   return false
 }
 
+var _dashSavedFilters = null
 let _dashLoading = false
 async function loadDashboard() {
-  console.log('[DASH] loadDashboard appelé, _dashLoading=' + _dashLoading)
+  console.log('[DASH] loadDashboard appelé, _dashLoading=' + _dashLoading + ', userFiltered=' + _dashUserFiltered)
   if (_dashLoading) return
+  if (_dashUserFiltered) {
+    console.log('[DASH] loadDashboard ignoré — filtres utilisateur actifs')
+    return
+  }
   _dashLoading = true
   dashLoading.classList.remove('hidden')
   dashError.classList.add('hidden')
@@ -1281,7 +1286,8 @@ async function handleDashSync() {
     } else {
       showToast(result.message || 'Aucune donnée disponible', 'warning')
     }
-    await loadDashboard()
+    if (!_dashUserFiltered) await loadDashboard()
+    else console.log('[DASH] Sync effectué, loadDashboard ignoré — filtres actifs')
   } catch (err) {
     showToast('Erreur synchronisation: ' + err.message, 'error')
   } finally {
