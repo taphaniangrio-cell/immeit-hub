@@ -582,13 +582,16 @@ editHashtags.addEventListener('blur', (e) => {
   renderHashtagSuggestions()
 })
 
+let _loadSeq = 0
 function loadArticles() {
+  const seq = ++_loadSeq
   showSkeleton(articleList)
   const params = new URLSearchParams()
   if (filter) params.set('statut', filter)
   params.set('limit', '50')
   if (currentPage > 1) params.set('page', String(currentPage))
   api(`/articles?${params}`).then(data => {
+    if (seq !== _loadSeq) return
     articles = data.articles || []
     currentPage = 1
     if (!editingId && articles.length > 0) {
@@ -596,6 +599,7 @@ function loadArticles() {
     }
     renderArticles()
   }).catch(() => {
+    if (seq !== _loadSeq) return
     articleList.innerHTML = '<div class="empty">Erreur de chargement</div>'
   })
 }
@@ -720,6 +724,9 @@ function renderHashtagSuggestions() {
 
 // SAVE
 btnSave.addEventListener('click', async () => {
+  if (btnSave.disabled) return
+  btnSave.disabled = true
+  btnSave.textContent = 'Sauvegarde…'
   const imageOptions = articleImages.length ? articleImages : null
   const data = {
     titre_interne: editTitre.value,
@@ -767,6 +774,7 @@ btnSave.addEventListener('click', async () => {
     if (idx !== -1) articles[idx] = updated.article
     renderArticles()
   } catch (err) { showToast('Erreur: ' + err.message, 'error') }
+  finally { btnSave.disabled = false; btnSave.textContent = 'Sauvegarder' }
 })
 
 btnValidate.addEventListener('click', async () => {
@@ -1214,7 +1222,7 @@ async function loadDashboard() {
     window._dashLastLoaded = Date.now()
     window._lastSyncTime = Date.now()
     window._dashLastData = data
-    try { localStorage.setItem('immeit_dash_cache', JSON.stringify(Object.assign(data, { _cachedAt: Date.now() }))) } catch {}
+    try { localStorage.setItem('immeit_dash_cache', JSON.stringify({ ...data, _cachedAt: Date.now() })) } catch {}
     renderDashboard(data)
     updateDashInfo()
     startSyncTimer()
@@ -1393,7 +1401,7 @@ function renderDashboard(data) {
   dashContent.innerHTML = ''
 
   const hasSynced = synced && synced.headers && synced.items && synced.items.length > 0
-  const hasSPData = sharepoint.connected && sharepoint.stats
+  const hasSPData = sharepoint?.connected && sharepoint?.stats
 
   let displayHeaders, displayItems, displayStats
   if (hasSPData) {
@@ -1473,8 +1481,9 @@ function renderDashboard(data) {
     var total = stats.total
 
     // ─── HEALTH SCORE ──────────────────────────────────────────
+    const ecart = stats.ecart || { avg: 0 }
     const avgConf = Math.round((stats.tauxConf1 + stats.tauxConfDem) / 2)
-    const score = Math.round((avgConf + stats.duree.zeroPct + (stats.ecart.avg <= 0 ? 100 : Math.max(0, 100 - stats.ecart.avg * 10))) / 3)
+    const score = Math.round((avgConf + stats.duree.zeroPct + (ecart.avg <= 0 ? 100 : Math.max(0, 100 - ecart.avg * 10))) / 3)
     const healthCls = score >= 80 ? 'good' : score >= 55 ? 'mid' : 'bad'
     const healthLabel = score >= 80 ? 'Bon' : score >= 55 ? 'Moyen' : 'À améliorer'
     const healthTitle = score >= 80 ? 'Tableau de bord opérationnel'
@@ -1483,7 +1492,7 @@ function renderDashboard(data) {
     const healthDesc = score >= 80
       ? `Les indicateurs sont au vert. Conf. 1ère diffusion (IMMEIT) : ${stats.tauxConf1}% · Conf. vérification (P2M) : ${stats.tauxConfDem}% · ${stats.duree.zeroPct}% traités en J+0.`
       : score >= 55
-      ? `Conf. 1ère diffusion : ${stats.tauxConf1}% · Conf. vérification P2M : ${stats.tauxConfDem}% · ${stats.duree.zeroPct}% J+0. ${stats.ecart.avg > 0 ? 'Écart moyen ' + stats.ecart.avg + 'j à réduire.' : 'Délais sous contrôle.'}`
+      ? `Conf. 1ère diffusion : ${stats.tauxConf1}% · Conf. vérification P2M : ${stats.tauxConfDem}% · ${stats.duree.zeroPct}% J+0. ${ecart.avg > 0 ? 'Écart moyen ' + ecart.avg + 'j à réduire.' : 'Délais sous contrôle.'}`
       : `Conf. 1ère diffusion : ${stats.tauxConf1}% · Conf. vérification P2M : ${stats.tauxConfDem}% · Délais : ${stats.duree.zeroPct}% J+0 — actions prioritaires requises.`
 
     const C = 2 * Math.PI * 30
@@ -1517,7 +1526,7 @@ function renderDashboard(data) {
     const conf1Color = stats.tauxConf1 >= 80 ? '#10B981' : stats.tauxConf1 >= 60 ? '#F59E0B' : '#EF4444'
     const confDemColor = stats.tauxConfDem >= 80 ? '#10B981' : stats.tauxConfDem >= 60 ? '#F59E0B' : '#EF4444'
     const dureeColor = stats.duree.zeroPct >= 90 ? '#10B981' : stats.duree.zeroPct >= 70 ? '#F59E0B' : '#EF4444'
-    const ecartColor = stats.ecart.avg <= 0 ? '#10B981' : stats.ecart.avg <= 3 ? '#F59E0B' : '#EF4444'
+    const ecartColor = ecart.avg <= 0 ? '#10B981' : ecart.avg <= 3 ? '#F59E0B' : '#EF4444'
 
   const kpis = document.createElement('div')
   kpis.className = 'dash-kpi-grid'
@@ -1558,8 +1567,8 @@ function renderDashboard(data) {
       <div class="dash-kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
       <div class="dash-kpi-body">
         <span class="dash-kpi-label">Écart</span>
-        <span class="dash-kpi-value" data-target="${Math.abs(stats.ecart.avg)}">${stats.ecart.avg <= 0 ? '' : '+'}${Math.abs(stats.ecart.avg)}<span style="font-size:.55em;margin-left:1px">j</span></span>
-        <span class="dash-kpi-sub">${stats.ecart.avg <= 0 ? 'avance' : 'retard'} moyen</span>
+        <span class="dash-kpi-value" data-target="${Math.abs(ecart.avg)}">${ecart.avg <= 0 ? '' : '+'}${Math.abs(ecart.avg)}<span style="font-size:.55em;margin-left:1px">j</span></span>
+        <span class="dash-kpi-sub">${ecart.avg <= 0 ? 'avance' : 'retard'} moyen</span>
       </div>
     </div>
   `

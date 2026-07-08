@@ -41,6 +41,26 @@ CREATE TABLE IF NOT EXISTS dashboard_cache (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- Auto-update trigger for dashboard_cache.updated_at
+CREATE OR REPLACE FUNCTION update_dashboard_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS dashboard_cache_updated_at ON dashboard_cache;
+CREATE TRIGGER dashboard_cache_updated_at
+BEFORE UPDATE ON dashboard_cache
+FOR EACH ROW EXECUTE FUNCTION update_dashboard_updated_at();
+
+-- Unique constraint on source_news_url for deduplication
+CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_source_news_url ON articles(source_news_url) WHERE source_news_url IS NOT NULL;
+
+-- Full-text search index
+CREATE INDEX IF NOT EXISTS idx_articles_fts ON articles USING gin(to_tsvector('french', titre_interne || ' ' || corps));
+
+-- Index on hashtags for tag-based queries
+CREATE INDEX IF NOT EXISTS idx_articles_hashtags ON articles USING gin(hashtags);
+
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN NEW.date_modification = NOW(); RETURN NEW; END;

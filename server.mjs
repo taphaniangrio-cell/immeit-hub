@@ -129,18 +129,25 @@ async function handleApi(req, res, pathname, url) {
 
   let body = '';
   if (req.method === 'POST' || req.method === 'PUT') {
+    let rejected = false;
     await new Promise((resolve, reject) => {
       let size = 0;
-      req.on('data', chunk => {
+      const onData = chunk => {
         size += chunk.length;
         if (size > CONSTANTS.MAX_PAYLOAD_SIZE) {
+          rejected = true;
           reject(new Error('Payload too large'));
           req.destroy();
+          return;
         }
         body += chunk;
-      });
-      req.on('end', resolve);
-      req.on('error', reject);
+      };
+      const onEnd = () => { if (!rejected) resolve(); };
+      const onError = err => { rejected = true; reject(err); };
+      req.on('data', onData);
+      req.on('end', onEnd);
+      req.on('error', onError);
+      req.on('close', () => { if (!rejected) { rejected = true; reject(new Error('Connection closed')); } });
     });
     try { req.body = JSON.parse(body); } catch { req.body = {}; }
   }
@@ -207,6 +214,10 @@ const server = http.createServer();
 
 server.setTimeout(CONSTANTS.SERVER_REQUEST_TIMEOUT);
 
+eventBus.on('dashboard-updated', (data) => {
+  broadcastSSE('dashboard-updated', data);
+});
+
 server.on('request', async (req, res) => {
   let url;
   try {
@@ -260,10 +271,6 @@ function tryListen(port, maxAttempts = 10) {
       console.log(`  ⚠ Le port ${START_PORT} était déjà utilisé — fallback sur ${port}`);
       console.log('');
     }
-
-    eventBus.on('dashboard-updated', (data) => {
-      broadcastSSE('dashboard-updated', data);
-    });
 
     // Open browser automatically after a short delay
     setTimeout(() => openBrowser(url), 800);

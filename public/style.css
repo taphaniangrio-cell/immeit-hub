@@ -261,7 +261,6 @@ body {
 .key-status { font-size: .66rem; padding: 0 0 0 6px; white-space: nowrap; }
 .key-ok { color: var(--clr-success); }
 .key-missing { color: var(--clr-danger); }
-}
 .filter-btn:hover { border-color: var(--clr-linkedin); color: var(--clr-linkedin); }
 .filter-btn.active { background: var(--clr-linkedin); color: #fff; border-color: var(--clr-linkedin); box-shadow: 0 2px 6px rgba(10,102,194,.2); }
 
@@ -1320,7 +1319,7 @@ button:disabled {
 
 /* ── Editor placeholder ── */
 .editor__placeholder {
-  display: none;
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
