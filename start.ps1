@@ -13,7 +13,13 @@ param([switch]$NoBrowser)
 
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ServerScript = Join-Path $ProjectRoot "server.mjs"
-$Url = "http://localhost:3000"
+
+# ── Lire le port depuis le fichier health (ou defaut 3000) ──
+$Port = 3000
+$healthFile = Join-Path $env:LOCALAPPDATA "IMMEIT\server.port"
+if (Test-Path $healthFile) { $Port = Get-Content $healthFile -Raw -ErrorAction SilentlyContinue | ForEach-Object { $_ -as [int] } }
+if (-not $Port -or $Port -eq 0) { $Port = 3000 }
+$Url = "http://localhost:$Port"
 
 # ── Verifications ──
 $nodeVer = node --version 2>$null
@@ -52,22 +58,28 @@ if (Test-ServerRunning) {
   exit 0
 }
 
-# ── Nettoyer les anciens processus ──
-try {
-  $connections = netstat -ano | Select-String ":3000\s"
-  foreach ($conn in $connections) {
-    $parts = $conn.ToString().Trim() -split '\s+'
-    $pid = $parts[-1]
-    if ($pid -and $pid -ne '0') {
-      $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
-      if ($proc -and $proc.ProcessName -eq 'node') {
-        Write-Host "[INFO] Ancien processus sur le port 3000 (PID $pid) -- arret..." -ForegroundColor Yellow
-        Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 1
-      }
-    }
+# ── Nettoyer les anciens processus sur le port 3000 ──
+function Get-PidsOnPort($Port) {
+  try {
+    $connections = Get-NetTCPConnection -LocalPort $Port -ErrorAction Stop
+    return @($connections | ForEach-Object { $_.OwningProcess })
+  } catch {
+    try {
+      return @(netstat -ano | Select-String ":$Port\s" | ForEach-Object {
+        $_.ToString().Trim() -split '\s+' | Select-Object -Last 1
+      } | Where-Object { $_ -and $_ -ne '0' })
+    } catch { return @() }
   }
-} catch {}
+}
+$oldPids = Get-PidsOnPort 3000
+$oldPids | ForEach-Object {
+  $p = Get-Process -Id $_ -ErrorAction SilentlyContinue
+  if ($p) {
+    Write-Host "[INFO] Ancien processus sur le port 3000 (PID $_ -- $($p.ProcessName)) -- arret..." -ForegroundColor Yellow
+    Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue
+  }
+}
+Start-Sleep -Seconds 1
 
 # ── Demarrer le serveur dans la console courante ──
 Write-Host ""
@@ -83,7 +95,12 @@ $ready = $false
 for ($i = 1; $i -le 30; $i++) {
   Start-Sleep -Seconds 1
   Write-Host "." -NoNewline
-  if (Test-ServerRunning) { $ready = $true; break }
+  # Relire le port depuis le fichier health (le serveur ecrit le port reel)
+  if (Test-Path $healthFile) {
+    $p = Get-Content $healthFile -Raw -ErrorAction SilentlyContinue | ForEach-Object { $_ -as [int] }
+    if ($p -and $p -ne 0 -and $p -ne $Port) { $Port = $p; $Url = "http://localhost:$Port" }
+  }
+  try { $r = Invoke-WebRequest -Uri "$Url/api/health" -UseBasicParsing -TimeoutSec 1 -ErrorAction Stop; if ($r.StatusCode -eq 200) { $ready = $true; break } } catch {}
 }
 Write-Host ""
 
