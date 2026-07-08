@@ -1913,7 +1913,7 @@ function renderDashboard(data) {
       for (var _fk in _ff) {
         var _ival = (item[_fk] || '')
         var _ffv = _ff[_fk]
-        if (!_norm(_ival.toLowerCase()).includes(_norm(_ffv))) return false
+        if (!_norm(_ival.toLowerCase()).includes(_norm(_ffv.toLowerCase()))) return false
       }
       if (searchVal) {
         var allText = _norm(Object.values(item).join(' ').toLowerCase())
