@@ -1627,8 +1627,9 @@ function renderDashboard(data) {
     // ─── INSIGHTS ──────────────────────────────────────────────
     const insights = []
     if (stats.avancementDist.length > 0) {
-      const enCours = stats.avancementDist.find(a => /en.cours/i.test(a.label))
-      if (enCours) insights.push(`<span class="dash-insight"><span class="dash-insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span><span class="dash-insight-text"><strong>${enCours.count} demandes</strong> sont en cours de traitement</span></span>`)
+      const enCours = stats.avancementDist.filter(a => /en.cours|valid.e.*p2m.*solder|a solder/i.test(a.label))
+      const enCoursTotal = enCours.reduce((s, a) => s + a.count, 0)
+      if (enCoursTotal > 0) insights.push(`<span class="dash-insight"><span class="dash-insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span><span class="dash-insight-text"><strong>${enCoursTotal} demande${enCoursTotal > 1 ? 's' : ''}</strong> sont en cours de traitement</span></span>`)
     }
     if (stats.monthlyTrend && stats.monthlyTrend.length >= 1) {
       var _norm2 = function(x) { return x.trim().toLowerCase().replace(/[\s\/]+/g, '_').replace(/[^a-z0-9_]/g, '') }
