@@ -30,23 +30,23 @@ module.exports = requireAuth(async (req, res) => {
       }
     }
 
-    // 2) Fallback: try auto-sync (DeviceCodeCredential — local dev)
+    // 2) Fallback: try cache
     if (!sharepointData || !sharepointData.connected) {
       try {
-        var autoData = await autoSync.fetchSharePointData()
-        if (autoData && autoData.items && autoData.items.length > 0) {
+        var cached = autoSync.loadCache()
+        if (cached && cached.items && cached.items.length > 0) {
           sharepointData = {
             connected: true,
-            headers: autoData.headers,
-            items: autoData.items,
+            headers: cached.headers,
+            items: cached.items,
             stats: null,
-            lastSync: autoData.syncedAt,
-            _rawCount: autoData._rawCount,
+            lastSync: cached.syncedAt,
+            _rawCount: cached._rawCount,
           }
-          liveSource = 'auto_sync'
+          liveSource = cached.source || 'cache'
         }
       } catch (e) {
-        log('warn', 'dash_sp_autosync_failed', { error: e.message })
+        log('warn', 'dash_sp_cache_fallback_failed', { error: e.message })
       }
     }
 

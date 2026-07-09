@@ -284,9 +284,10 @@ function tryListen(port, maxAttempts = 10) {
       const autoSync = _require('./lib/auto-sync');
       const result = await autoSync.initialSync().catch(() => null);
       if (result) {
-        console.log(`  ✓ ${result.items.length} demandes synchronisées depuis SharePoint`);
+        const source = result.source === 'client_credentials' ? 'SharePoint' : 'cache';
+        console.log(`  ✓ ${result.items.length} demandes (${source})`);
       } else {
-        console.log('  ℹ Aucune donnée SharePoint — utilise "📋 Coller Excel" dans le dashboard');
+        console.log('  ℹ Aucune donnée disponible');
       }
       autoSync.startContinuousSync();
     }, 1000);
