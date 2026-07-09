@@ -1,7 +1,6 @@
-const fs = require('fs');
-const path = require('path');
 const { requireAuth } = require('../lib/auth');
 const { log } = require('../lib/logger');
+const { getCacheDir, safeWriteFile } = require('../lib/cache-dir');
 
 module.exports = requireAuth(async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST requis' });
@@ -12,14 +11,7 @@ module.exports = requireAuth(async (req, res) => {
 
     const cache = { headers, items, syncedAt: syncedAt || new Date().toISOString(), source: source || 'api' };
 
-    // Try to write to local cache file
-    try {
-      const logDir = process.env.LOCALAPPDATA
-        ? path.join(process.env.LOCALAPPDATA, 'IMMEIT')
-        : path.join(__dirname, '..', '.immeit-logs');
-      if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
-      fs.writeFileSync(path.join(logDir, 'dash-cache.json'), JSON.stringify(cache));
-    } catch (e) { log('warn', 'dashboard_sync_cache_write_failed', { error: e?.message }); }
+    safeWriteFile(require('path').join(getCacheDir(), 'dash-cache.json'), cache);
 
     // Also try DB storage if available
     try {

@@ -1,10 +1,10 @@
-const path = require('path');
 const db = require('../lib/db');
 const { requireAuth } = require('../lib/auth');
 const { log } = require('../lib/logger');
 const cors = require('../lib/cors');
 const sharepoint = require('../lib/sharepoint');
 const autoSync = require('../lib/auto-sync');
+const { getCacheDir, safeReadFile } = require('../lib/cache-dir');
 
 const FETCH_TIMEOUT = 30000;
 
@@ -115,13 +115,8 @@ async function loadCachedData() {
   } catch (e) { /* ignore */ }
 
   try {
-    var logDir = process.env.LOCALAPPDATA
-      ? path.join(process.env.LOCALAPPDATA, 'IMMEIT')
-      : path.join(__dirname, '..', '.immeit-logs')
-    var filePath = path.join(logDir, 'dash-cache.json')
-    if (require('fs').existsSync(filePath)) {
-      return JSON.parse(require('fs').readFileSync(filePath, 'utf-8'))
-    }
+    var raw = safeReadFile(require('path').join(getCacheDir(), 'dash-cache.json'))
+    if (raw) return JSON.parse(raw)
   } catch (e) { /* ignore */ }
 
   return null

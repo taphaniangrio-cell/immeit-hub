@@ -8,6 +8,7 @@ import { spawn, exec } from 'node:child_process';
 const _require = createRequire(import.meta.url);
 const { CONSTANTS } = _require('./lib/constants');
 const eventBus = _require('./lib/events');
+const { getServerDir, ensureDir, safeWriteFile } = _require('./lib/cache-dir');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const START_PORT = parseInt(process.env.PORT, 10) || 3000;
@@ -24,9 +25,6 @@ const MIME = {
 };
 
 const SSE_CLIENTS = new Set();
-const LOG_DIR = process.env.LOCALAPPDATA
-  ? path.join(process.env.LOCALAPPDATA, 'IMMEIT')
-  : path.join(__dirname, '.immeit-logs');
 
 loadEnv();
 
@@ -49,11 +47,10 @@ function openBrowser(url) {
 }
 
 function writeHealthFile(status) {
-  try {
-    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
-    fs.writeFileSync(path.join(LOG_DIR, 'server.port'), String(health.port || START_PORT));
-    fs.writeFileSync(path.join(LOG_DIR, 'server.pid'), String(process.pid));
-  } catch (e) { console.error('[HEALTH] write failed:', e?.message); }
+  var dir = getServerDir();
+  ensureDir(dir);
+  safeWriteFile(path.join(dir, 'server.port'), String(health.port || START_PORT));
+  safeWriteFile(path.join(dir, 'server.pid'), String(process.pid));
 }
 
 writeHealthFile('starting');
