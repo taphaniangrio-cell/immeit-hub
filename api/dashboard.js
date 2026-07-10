@@ -119,6 +119,12 @@ async function loadCachedData() {
     if (raw) return JSON.parse(raw)
   } catch (e) { /* ignore */ }
 
+  try {
+    const { fetchCache } = require('../lib/github-cache');
+    var githubCached = await fetchCache();
+    if (githubCached && githubCached.items && githubCached.items.length > 0) return githubCached;
+  } catch (e) { /* ignore */ }
+
   return null
 }
 

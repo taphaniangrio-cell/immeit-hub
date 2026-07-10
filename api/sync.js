@@ -121,7 +121,23 @@ async function handleSync(req, res) {
     }
   } catch (e) {}
 
-  // 4. Nothing available
+  // 4. Fallback: GitHub cache (fonctionne sur Vercel)
+  try {
+    const { fetchCache } = require('../lib/github-cache');
+    var githubCached = await fetchCache();
+    if (githubCached && githubCached.items && githubCached.items.length > 0) {
+      log('info', 'sync_fallback_github_cache', { items: githubCached.items.length });
+      return res.status(200).json({
+        success: true,
+        count: githubCached.items.length,
+        syncedAt: githubCached.syncedAt,
+        source: 'github_cache',
+        message: githubCached.items.length + ' demandes (cache GitHub — SharePoint indisponible)',
+      });
+    }
+  } catch (e) {}
+
+  // 5. Nothing available
   var reason = !sharepoint.isConfigured()
     ? 'Variables SharePoint non configurées (SHAREPOINT_TENANT_ID, SHAREPOINT_CLIENT_ID, SHAREPOINT_CLIENT_SECRET)'
     : 'Impossible de contacter SharePoint — vérifie les credentials et la connectivité';
