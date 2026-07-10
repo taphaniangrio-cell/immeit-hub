@@ -32,10 +32,15 @@
   - `sessionStorage` flag anti-boucle infinie
   - Meta tags `Cache-Control: no-cache, no-store, must-revalidate` dans index.html
   - Vercel headers HTML `no-cache, no-store` dans `vercel.json`
+- Sync API sauvegarde désormais dans le fichier cache :
+  - Fallback GitHub cache → `saveToFileCache()` + `saveToDB()`
+  - Fallback DB cache → `saveToFileCache()`
 
 ## Relevant Files
 - `lib/auto-sync.js` : coeur du sync, fallback chain + token management + Graph API fetch
 - `api/sync.js` : endpoint POST, accepte CRON/auth bearer ou session
+  - Sauvegarde les données GitHub cache / DB cache dans le fichier local
+- `api/dashboard.js` : `loadCachedData()` avec fallback GitHub cache
 - `server.mjs` : startup message, lance `sync()` + `startContinuousSync()`
 - `vercel.json` : CRON `0 5 * * *` + maxDuration 60s + cache headers HTML
 - `.github/workflows/sync.yml` : GitHub Actions toutes les 30 min

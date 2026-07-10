@@ -94,6 +94,7 @@ async function handleSync(req, res) {
       if (typeof dbCache === 'string') { try { dbCache = JSON.parse(dbCache); } catch {} }
       if (dbCache && dbCache.items && dbCache.items.length > 0) {
         log('info', 'sync_fallback_db_cache', { items: dbCache.items.length });
+        saveToFileCache(dbCache);
         return res.status(200).json({
           success: true,
           count: dbCache.items.length,
@@ -127,9 +128,12 @@ async function handleSync(req, res) {
     var githubCached = await fetchCache();
     if (githubCached && githubCached.items && githubCached.items.length > 0) {
       log('info', 'sync_fallback_github_cache', { items: githubCached.items.length });
+      saveToFileCache(githubCached);
+      saveToDB(githubCached);
       return res.status(200).json({
         success: true,
         count: githubCached.items.length,
+        rawCount: githubCached._rawCount,
         syncedAt: githubCached.syncedAt,
         source: 'github_cache',
         message: githubCached.items.length + ' demandes (cache GitHub — SharePoint indisponible)',
