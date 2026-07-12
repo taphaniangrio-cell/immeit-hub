@@ -124,7 +124,7 @@ function getCookie(name) {
 async function api(path, options = {}) {
   const sep = path.includes('?') ? '&' : '?'
   const controller = new AbortController()
-  const ms = options.timeout || (path.includes('/generate') ? 60000 : 20000)
+  const ms = options.timeout || (path.includes('/generate') ? 60000 : path.includes('/dashboard') ? 25000 : 20000)
   const timeout = setTimeout(() => controller.abort(new Error('Délai d\'attente dépassé (' + (ms / 1000) + 's)')), ms)
   const headers = { 'Content-Type': 'application/json', ...options.headers }
   const method = (options.method || 'GET').toUpperCase()

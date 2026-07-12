@@ -4,43 +4,39 @@ const { log } = require('../lib/logger');
 const cors = require('../lib/cors');
 const sharepoint = require('../lib/sharepoint');
 
-const FETCH_TIMEOUT = 30000;
+const LIVE_TIMEOUT = 15000;
 
 module.exports = requireAuth(async (req, res) => {
   if (cors(res, req)) return;
 
   try {
     const [articleStats, cachedData] = await Promise.all([
-      getArticleStats(),
+      getArticleStats().catch(e => {
+        log('warn', 'dash_article_stats_failed', { error: e.message });
+        return { total: 0, brouillon: 0, en_revision: 0, valide: 0, publie: 0, archive: 0, termines: 0, tauxCompletion: 0 };
+      }),
       loadCachedData(),
     ]);
 
-    var sharepointData = null
-    var liveSource = null
+    var sharepointData = null;
+    var liveSource = null;
 
-    // 1) Lecture live (app-only si configuré, sinon compte délégué persistant) — le choix
-    //    du mode est interne à fetchDashboardData(), fonctionne aussi bien sur Vercel qu'en
-    //    local sans configuration supplémentaire.
     try {
-      sharepointData = await timeoutPromise(sharepoint.fetchDashboardData(), FETCH_TIMEOUT)
-      if (sharepointData && sharepointData.connected) liveSource = sharepointData.source || 'live'
+      sharepointData = await timeoutPromise(sharepoint.fetchDashboardData(), LIVE_TIMEOUT);
+      if (sharepointData && sharepointData.connected) liveSource = sharepointData.source || 'live';
     } catch (e) {
-      log('warn', 'dash_sp_live_failed', { error: e.message })
+      log('warn', 'dash_sp_live_failed', { error: e.message });
     }
 
-    // 2) PAS de fallback file cache — la DB est la seule source de vérité côté cache.
-    //    Le file cache peut contenir des données stale (ex: 1014 lignes au lieu de 1013)
-    //    et auto-renforce l'erreur en écrasant la DB. On ne l'utilise jamais ici.
+    var displayData;
 
-    var displayData
     if (sharepointData && sharepointData.connected && sharepointData.items?.length > 0) {
-      // Defense-in-depth : re-filtrer même les données live pour garantir le bon nombre
-      var liveItems = sharepointData.items
+      var liveItems = sharepointData.items;
       if (sharepointData.headers && liveItems.length > 0) {
-        var liveFiltered = sharepoint.filterDataRows(liveItems, sharepointData.headers)
+        var liveFiltered = sharepoint.filterDataRows(liveItems, sharepointData.headers);
         if (liveFiltered.length !== liveItems.length) {
-          log('info', 'dash_live_filtered', { before: liveItems.length, after: liveFiltered.length })
-          liveItems = liveFiltered
+          log('info', 'dash_live_filtered', { before: liveItems.length, after: liveFiltered.length });
+          liveItems = liveFiltered;
         }
       }
       displayData = {
@@ -49,17 +45,21 @@ module.exports = requireAuth(async (req, res) => {
         syncedAt: new Date().toISOString(),
         source: liveSource || 'sharepoint_live',
         _rawCount: sharepointData._rawCount,
-      }
-      saveToDBCache(displayData).catch(function() {})
+      };
+      saveToDBCache(displayData).catch(function() {});
     } else {
-      displayData = cachedData
+      displayData = cachedData;
       if (displayData && displayData.items && displayData.headers && displayData.items.length > 0) {
-        var filtered = sharepoint.filterDataRows(displayData.items, displayData.headers)
+        var filtered = sharepoint.filterDataRows(displayData.items, displayData.headers);
         if (filtered.length !== displayData.items.length) {
-          displayData = { ...displayData, items: filtered, _rawCount: displayData.items.length }
-          saveToDBCache(displayData).catch(function() {})
+          displayData = { ...displayData, items: filtered, _rawCount: displayData.items.length };
+          saveToDBCache(displayData).catch(function() {});
         }
       }
+    }
+
+    if (!displayData || !displayData.items || displayData.items.length === 0) {
+      log('warn', 'dash_no_data', { live: !!sharepointData?.connected, cached: !!cachedData });
     }
 
     return res.status(200).json({
@@ -68,20 +68,20 @@ module.exports = requireAuth(async (req, res) => {
         ? { connected: true, lastSync: sharepointData.lastSync || displayData?.syncedAt }
         : { connected: false },
       synced: displayData,
-    })
+    });
   } catch (err) {
-    log('error', 'dashboard_error', { error: err.message })
-    return res.status(500).json({ error: 'Erreur chargement tableau de bord' })
+    log('error', 'dashboard_error', { error: err.message, stack: err.stack });
+    return res.status(500).json({ error: 'Erreur chargement tableau de bord' });
   }
-})
+});
 
 function timeoutPromise(promise, ms) {
   return Promise.race([
     promise,
     new Promise(function(_, reject) {
-      setTimeout(function() { reject(new Error('timeout')) }, ms)
+      setTimeout(function() { reject(new Error('timeout')); }, ms);
     }),
-  ])
+  ]);
 }
 
 async function saveToDBCache(data) {
@@ -91,25 +91,23 @@ async function saveToDBCache(data) {
        VALUES ($1, $2, NOW())
        ON CONFLICT (cache_key) DO UPDATE SET cache_data = $2, updated_at = NOW()`,
       ['sharepoint_suivi_2026', JSON.stringify(data)]
-    )
-  } catch (e) { log('warn', 'dash_cache_save_failed', { error: e.message }) }
+    );
+  } catch (e) { log('warn', 'dash_cache_save_failed', { error: e.message }); }
 }
 
 async function loadCachedData() {
-  // DB = source de vérité unique pour le cache dashboard.
-  // Pas de fallback file/GitHub : ces caches peuvent être stale et auto-renforcent l'erreur.
   try {
     const r = await db.query(
       `SELECT cache_data FROM dashboard_cache WHERE cache_key = 'sharepoint_suivi_2026'`
-    )
+    );
     if (r.rows.length > 0) {
-      var data = r.rows[0].cache_data
-      if (typeof data === 'string') { try { data = JSON.parse(data) } catch {} }
-      if (data && data.items && data.items.length > 0) return data
+      var data = r.rows[0].cache_data;
+      if (typeof data === 'string') { try { data = JSON.parse(data); } catch {} }
+      if (data && data.items && data.items.length > 0) return data;
     }
-  } catch (e) { log('warn', 'dash_cache_db_read_failed', { error: e?.message }) }
+  } catch (e) { log('warn', 'dash_cache_db_read_failed', { error: e?.message }); }
 
-  return null
+  return null;
 }
 
 async function getArticleStats() {
@@ -123,9 +121,9 @@ async function getArticleStats() {
       COUNT(*) FILTER (WHERE statut = 'archive')::int AS archive,
       COUNT(*) FILTER (WHERE statut IN ('valide', 'publie'))::int AS termines
     FROM articles
-  `)
-  var row = result.rows[0] || {}
-  var total = row.total || 0
+  `);
+  var row = result.rows[0] || {};
+  var total = row.total || 0;
 
   return {
     total: total,
@@ -136,5 +134,5 @@ async function getArticleStats() {
     archive: row.archive || 0,
     termines: row.termines || 0,
     tauxCompletion: total > 0 ? Math.round(((row.termines || 0) / total) * 100) : 0,
-  }
+  };
 }
