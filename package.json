@@ -13,15 +13,12 @@
   },
   "dependencies": {
     "@azure/msal-node": "^5.3.1",
-    "pg": "^8.13.0",
     "bcryptjs": "^3.0.3",
-    "nodemailer": "^9.0.3"
+    "nodemailer": "^9.0.3",
+    "pg": "^8.13.0"
   },
   "optionalDependencies": {
     "@azure/identity": "^4.13.1"
-  },
-  "devDependencies": {
-    "prettier": "^3.4.0"
   },
   "repository": {
     "type": "git",

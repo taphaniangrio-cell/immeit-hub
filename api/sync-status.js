@@ -24,11 +24,14 @@ module.exports = requireAuth(async (req, res) => {
     fileCache = syncEngine.loadCache();
   } catch {}
 
-  let dbState = { isOpen: false };
+  let dbState = { isOpen: false, consecutiveFails: 0 };
   try {
     const db = require('../lib/db');
-    dbState = db.getBreakerState();
-  } catch {}
+    await db.query('SELECT 1');
+    dbState = { isOpen: false, consecutiveFails: 0 };
+  } catch (err) {
+    dbState = { isOpen: true, consecutiveFails: 1, lastError: err.message };
+  }
 
   const spConfigured = !!(process.env.SHAREPOINT_TENANT_ID && process.env.SHAREPOINT_CLIENT_ID && process.env.SHAREPOINT_CLIENT_SECRET);
 

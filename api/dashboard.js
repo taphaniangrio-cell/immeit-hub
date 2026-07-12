@@ -18,8 +18,8 @@ module.exports = requireAuth(async (req, res) => {
       loadCachedData(),
     ]);
 
-    var sharepointData = null;
-    var liveSource = null;
+    let sharepointData = null;
+    let liveSource = null;
 
     try {
       sharepointData = await timeoutPromise(sharepoint.fetchDashboardData(), LIVE_TIMEOUT);
@@ -28,12 +28,12 @@ module.exports = requireAuth(async (req, res) => {
       log('warn', 'dash_sp_live_failed', { error: e.message });
     }
 
-    var displayData;
+    let displayData;
 
     if (sharepointData && sharepointData.connected && sharepointData.items?.length > 0) {
-      var liveItems = sharepointData.items;
+      let liveItems = sharepointData.items;
       if (sharepointData.headers && liveItems.length > 0) {
-        var liveFiltered = sharepoint.filterDataRows(liveItems, sharepointData.headers);
+        const liveFiltered = sharepoint.filterDataRows(liveItems, sharepointData.headers);
         if (liveFiltered.length !== liveItems.length) {
           log('info', 'dash_live_filtered', { before: liveItems.length, after: liveFiltered.length });
           liveItems = liveFiltered;
@@ -50,7 +50,7 @@ module.exports = requireAuth(async (req, res) => {
     } else {
       displayData = cachedData;
       if (displayData && displayData.items && displayData.headers && displayData.items.length > 0) {
-        var filtered = sharepoint.filterDataRows(displayData.items, displayData.headers);
+        const filtered = sharepoint.filterDataRows(displayData.items, displayData.headers);
         if (filtered.length !== displayData.items.length) {
           displayData = { ...displayData, items: filtered, _rawCount: displayData.items.length };
           saveToDBCache(displayData).catch(function() {});
@@ -102,7 +102,7 @@ async function loadCachedData() {
       `SELECT cache_data FROM dashboard_cache WHERE cache_key = 'sharepoint_suivi_2026'`
     );
     if (r.rows.length > 0) {
-      var data = r.rows[0].cache_data;
+      let data = r.rows[0].cache_data;
       if (typeof data === 'string') { try { data = JSON.parse(data); } catch {} }
       if (data && data.items && data.items.length > 0) return data;
     }
@@ -122,7 +122,7 @@ async function loadCachedData() {
 }
 
 async function getArticleStats() {
-  var result = await db.query(`
+  const result = await db.query(`
     SELECT
       COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE statut = 'brouillon')::int AS brouillon,
@@ -133,8 +133,8 @@ async function getArticleStats() {
       COUNT(*) FILTER (WHERE statut IN ('valide', 'publie'))::int AS termines
     FROM articles
   `);
-  var row = result.rows[0] || {};
-  var total = row.total || 0;
+  const row = result.rows[0] || {};
+  const total = row.total || 0;
 
   return {
     total: total,

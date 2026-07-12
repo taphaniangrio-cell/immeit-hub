@@ -11,7 +11,7 @@ module.exports = requireAuth(async (req, res) => {
     if (!headers || !items) return res.status(400).json({ error: 'headers et items requis' });
 
     // Defense-in-depth : filtrer avant sauvegarde
-    var filteredItems = items;
+    let filteredItems = items;
     if (headers && items.length > 0) {
       filteredItems = sharepoint.filterDataRows(items, headers);
     }

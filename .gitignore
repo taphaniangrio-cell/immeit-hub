@@ -1,23 +1,22 @@
 node_modules/
 .env
 .env.local
-*.log
-.DS_Store
+.env.vercel
+.env.vercel.local
+.azure-app-credentials.json
+
+.vercel/
 .vscode/
 .idea/
 
-.vercel/
+# Runtime cache (changes on every sync)
+cache/
 
-cookies.txt
-.azure-app-credentials.json
-.check-*.cjs
-_check*
-scripts/node_modules/
-
-# Build / OS
+# OS
+.DS_Store
 Thumbs.db
 desktop.ini
 
 # Logs
+*.log
 .immeit-logs/
-.env.vercel.local
