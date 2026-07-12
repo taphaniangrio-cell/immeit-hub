@@ -35,10 +35,18 @@ module.exports = requireAuth(async (req, res) => {
       try {
         var cached = autoSync.loadCache()
         if (cached && cached.items && cached.items.length > 0) {
+          var cacheItems = cached.items
+          if (cached.headers && cacheItems.length > 0) {
+            var filtered = sharepoint.filterDataRows(cacheItems, cached.headers)
+            if (filtered.length !== cacheItems.length) {
+              log('info', 'dash_cache_filtered', { before: cacheItems.length, after: filtered.length })
+              cacheItems = filtered
+            }
+          }
           sharepointData = {
             connected: true,
             headers: cached.headers,
-            items: cached.items,
+            items: cacheItems,
             stats: null,
             lastSync: cached.syncedAt,
             _rawCount: cached._rawCount,
