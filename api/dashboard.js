@@ -11,10 +11,7 @@ module.exports = requireAuth(async (req, res) => {
 
   try {
     const [articleStats, cachedData] = await Promise.all([
-      getArticleStats().catch(e => {
-        log('warn', 'dash_article_stats_failed', { error: e.message });
-        return { total: 0, brouillon: 0, en_revision: 0, valide: 0, publie: 0, archive: 0, termines: 0, tauxCompletion: 0 };
-      }),
+      getArticleStats(),
       loadCachedData(),
     ]);
 
@@ -96,54 +93,76 @@ async function saveToDBCache(data) {
 }
 
 async function loadCachedData() {
-  // 1) DB cache
-  try {
-    const r = await db.query(
-      `SELECT cache_data FROM dashboard_cache WHERE cache_key = 'sharepoint_suivi_2026'`
-    );
-    if (r.rows.length > 0) {
-      let data = r.rows[0].cache_data;
-      if (typeof data === 'string') { try { data = JSON.parse(data); } catch {} }
-      if (data && data.items && data.items.length > 0) return data;
-    }
-  } catch (e) { log('warn', 'dash_cache_db_read_failed', { error: e?.message }); }
+  const DB_TIMEOUT = 5000;
 
-  // 2) GitHub cache (fallback si DB vide/inaccessible)
-  try {
-    const { fetchCache } = require('../lib/github-cache');
-    const gh = await fetchCache();
-    if (gh && gh.items && gh.items.length > 0 && gh.headers) {
-      log('info', 'dash_github_cache_fallback', { items: gh.items.length });
-      return gh;
-    }
-  } catch (e) { log('warn', 'dash_github_cache_fallback_failed', { error: e?.message }); }
+  const dbPromise = (async () => {
+    try {
+      const r = await Promise.race([
+        db.query(`SELECT cache_data FROM dashboard_cache WHERE cache_key = 'sharepoint_suivi_2026'`),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('db_cache_timeout')), DB_TIMEOUT)),
+      ]);
+      if (r.rows.length > 0) {
+        let data = r.rows[0].cache_data;
+        if (typeof data === 'string') { try { data = JSON.parse(data); } catch {} }
+        if (data && data.items && data.items.length > 0) return data;
+      }
+    } catch (e) { log('warn', 'dash_cache_db_read_failed', { error: e?.message }); }
+    return null;
+  })();
 
+  const ghPromise = (async () => {
+    try {
+      const { fetchCache } = require('../lib/github-cache');
+      const gh = await fetchCache();
+      if (gh && gh.items && gh.items.length > 0 && gh.headers) {
+        return gh;
+      }
+    } catch (e) { log('warn', 'dash_github_cache_fallback_failed', { error: e?.message }); }
+    return null;
+  })();
+
+  const [dbData, ghData] = await Promise.all([dbPromise, ghPromise]);
+
+  if (dbData) {
+    log('info', 'dash_cache_db_hit', { items: dbData.items.length });
+    return dbData;
+  }
+  if (ghData) {
+    log('info', 'dash_github_cache_fallback', { items: ghData.items.length });
+    return ghData;
+  }
   return null;
 }
 
 async function getArticleStats() {
-  const result = await db.query(`
-    SELECT
-      COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE statut = 'brouillon')::int AS brouillon,
-      COUNT(*) FILTER (WHERE statut = 'en_revision')::int AS en_revision,
-      COUNT(*) FILTER (WHERE statut = 'valide')::int AS valide,
-      COUNT(*) FILTER (WHERE statut = 'publie')::int AS publie,
-      COUNT(*) FILTER (WHERE statut = 'archive')::int AS archive,
-      COUNT(*) FILTER (WHERE statut IN ('valide', 'publie'))::int AS termines
-    FROM articles
-  `);
-  const row = result.rows[0] || {};
-  const total = row.total || 0;
-
-  return {
-    total: total,
-    brouillon: row.brouillon || 0,
-    en_revision: row.en_revision || 0,
-    valide: row.valide || 0,
-    publie: row.publie || 0,
-    archive: row.archive || 0,
-    termines: row.termines || 0,
-    tauxCompletion: total > 0 ? Math.round(((row.termines || 0) / total) * 100) : 0,
-  };
+  try {
+    const result = await Promise.race([
+      db.query(`
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE statut = 'brouillon')::int AS brouillon,
+          COUNT(*) FILTER (WHERE statut = 'en_revision')::int AS en_revision,
+          COUNT(*) FILTER (WHERE statut = 'valide')::int AS valide,
+          COUNT(*) FILTER (WHERE statut = 'publie')::int AS publie,
+          COUNT(*) FILTER (WHERE statut = 'archive')::int AS archive,
+          COUNT(*) FILTER (WHERE statut IN ('valide', 'publie'))::int AS termines
+        FROM articles
+      `),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('stats_timeout')), 5000)),
+    ]);
+    const row = result.rows[0] || {};
+    const total = row.total || 0;
+    return {
+      total,
+      brouillon: row.brouillon || 0,
+      en_revision: row.en_revision || 0,
+      valide: row.valide || 0,
+      publie: row.publie || 0,
+      archive: row.archive || 0,
+      termines: row.termines || 0,
+      tauxCompletion: total > 0 ? Math.round(((row.termines || 0) / total) * 100) : 0,
+    };
+  } catch {
+    return { total: 0, brouillon: 0, en_revision: 0, valide: 0, publie: 0, archive: 0, termines: 0, tauxCompletion: 0 };
+  }
 }
