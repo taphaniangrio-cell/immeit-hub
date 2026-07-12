@@ -1,5 +1,5 @@
 const API_BASE = '/api'
-const APP_VERSION = '159'
+const APP_VERSION = '160'
 
 // Cache invalidation : reload si un nouveau déploiement est détecté
 ;(() => {
@@ -12,6 +12,8 @@ const APP_VERSION = '159'
 
   if ((htmlVersion !== APP_VERSION || (storedVersion && storedVersion !== APP_VERSION)) && !alreadyReloaded) {
     localStorage.setItem('immeit_app_version', APP_VERSION)
+    // Invalider aussi le cache dashboard pour forcer un rechargement fresh
+    localStorage.removeItem('immeit_dash_cache')
     sessionStorage.setItem('immeit_reloaded', '1')
     if (htmlEl) htmlEl.textContent = 'v' + APP_VERSION
     location.reload()
