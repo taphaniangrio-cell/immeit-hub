@@ -273,8 +273,11 @@ function tryListen(port, maxAttempts = 10) {
       console.log('');
     }
 
-    // Open browser automatically after a short delay
-    setTimeout(() => openBrowser(url), 800);
+    // Open browser automatically after a short delay (only on first start, not on watchdog restart)
+    if (!browserOpened) {
+      browserOpened = true;
+      setTimeout(() => openBrowser(url), 800);
+    }
 
     // Auto-sync SharePoint data after server start
     setTimeout(async () => {
@@ -308,6 +311,7 @@ function tryListen(port, maxAttempts = 10) {
 let crashCount = 0;
 const MAX_CRASHES = 10;
 const RESTART_DELAY = 2000;
+let browserOpened = false;
 
 function restartServer() {
   crashCount++;
