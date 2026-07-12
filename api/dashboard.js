@@ -3,8 +3,6 @@ const { requireAuth } = require('../lib/auth');
 const { log } = require('../lib/logger');
 const cors = require('../lib/cors');
 const sharepoint = require('../lib/sharepoint');
-const autoSync = require('../lib/auto-sync');
-const { getCacheDir, safeReadFile } = require('../lib/cache-dir');
 
 const FETCH_TIMEOUT = 30000;
 
@@ -30,33 +28,9 @@ module.exports = requireAuth(async (req, res) => {
       log('warn', 'dash_sp_live_failed', { error: e.message })
     }
 
-    // 2) Fallback: try cache
-    if (!sharepointData || !sharepointData.connected) {
-      try {
-        var cached = autoSync.loadCache()
-        if (cached && cached.items && cached.items.length > 0) {
-          var cacheItems = cached.items
-          if (cached.headers && cacheItems.length > 0) {
-            var filtered = sharepoint.filterDataRows(cacheItems, cached.headers)
-            if (filtered.length !== cacheItems.length) {
-              log('info', 'dash_cache_filtered', { before: cacheItems.length, after: filtered.length })
-              cacheItems = filtered
-            }
-          }
-          sharepointData = {
-            connected: true,
-            headers: cached.headers,
-            items: cacheItems,
-            stats: null,
-            lastSync: cached.syncedAt,
-            _rawCount: cached._rawCount,
-          }
-          liveSource = cached.source || 'cache'
-        }
-      } catch (e) {
-        log('warn', 'dash_sp_cache_fallback_failed', { error: e.message })
-      }
-    }
+    // 2) PAS de fallback file cache — la DB est la seule source de vérité côté cache.
+    //    Le file cache peut contenir des données stale (ex: 1014 lignes au lieu de 1013)
+    //    et auto-renforce l'erreur en écrasant la DB. On ne l'utilise jamais ici.
 
     var displayData
     if (sharepointData && sharepointData.connected && sharepointData.items?.length > 0) {
@@ -113,6 +87,8 @@ async function saveToDBCache(data) {
 }
 
 async function loadCachedData() {
+  // DB = source de vérité unique pour le cache dashboard.
+  // Pas de fallback file/GitHub : ces caches peuvent être stale et auto-renforcent l'erreur.
   try {
     const r = await db.query(
       `SELECT cache_data FROM dashboard_cache WHERE cache_key = 'sharepoint_suivi_2026'`
@@ -123,22 +99,6 @@ async function loadCachedData() {
       if (data && data.items && data.items.length > 0) return data
     }
   } catch (e) { log('warn', 'dash_cache_db_read_failed', { error: e?.message }) }
-
-  try {
-    var cached = autoSync.loadCache()
-    if (cached && cached.items && cached.items.length > 0) return cached
-  } catch (e) { /* ignore */ }
-
-  try {
-    var raw = safeReadFile(require('path').join(getCacheDir(), 'dash-cache.json'))
-    if (raw) return JSON.parse(raw)
-  } catch (e) { /* ignore */ }
-
-  try {
-    const { fetchCache } = require('../lib/github-cache');
-    var githubCached = await fetchCache();
-    if (githubCached && githubCached.items && githubCached.items.length > 0) return githubCached;
-  } catch (e) { /* ignore */ }
 
   return null
 }
