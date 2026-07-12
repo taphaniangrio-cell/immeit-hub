@@ -1,6 +1,7 @@
 const { requireAuth } = require('../lib/auth');
 const { log } = require('../lib/logger');
 const { getCacheDir, safeWriteFile } = require('../lib/cache-dir');
+const sharepoint = require('../lib/sharepoint');
 
 module.exports = requireAuth(async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST requis' });
@@ -9,7 +10,13 @@ module.exports = requireAuth(async (req, res) => {
     const { headers, items, syncedAt, source } = req.body;
     if (!headers || !items) return res.status(400).json({ error: 'headers et items requis' });
 
-    const cache = { headers, items, syncedAt: syncedAt || new Date().toISOString(), source: source || 'api' };
+    // Defense-in-depth : filtrer avant sauvegarde
+    var filteredItems = items;
+    if (headers && items.length > 0) {
+      filteredItems = sharepoint.filterDataRows(items, headers);
+    }
+
+    const cache = { headers, items: filteredItems, syncedAt: syncedAt || new Date().toISOString(), source: source || 'api' };
 
     safeWriteFile(require('path').join(getCacheDir(), 'dash-cache.json'), cache);
 

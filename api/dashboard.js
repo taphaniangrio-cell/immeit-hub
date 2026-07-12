@@ -34,9 +34,18 @@ module.exports = requireAuth(async (req, res) => {
 
     var displayData
     if (sharepointData && sharepointData.connected && sharepointData.items?.length > 0) {
+      // Defense-in-depth : re-filtrer même les données live pour garantir le bon nombre
+      var liveItems = sharepointData.items
+      if (sharepointData.headers && liveItems.length > 0) {
+        var liveFiltered = sharepoint.filterDataRows(liveItems, sharepointData.headers)
+        if (liveFiltered.length !== liveItems.length) {
+          log('info', 'dash_live_filtered', { before: liveItems.length, after: liveFiltered.length })
+          liveItems = liveFiltered
+        }
+      }
       displayData = {
         headers: sharepointData.headers,
-        items: sharepointData.items,
+        items: liveItems,
         syncedAt: new Date().toISOString(),
         source: liveSource || 'sharepoint_live',
         _rawCount: sharepointData._rawCount,
