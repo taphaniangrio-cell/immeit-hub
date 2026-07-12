@@ -1405,7 +1405,7 @@ function connectSSE() {
         var _syncEl = document.getElementById('btn-dash-sync')
         var _refEl = document.getElementById('btn-dash-refresh')
         if ((_syncEl && _syncEl.classList.contains('syncing')) || (_refEl && _refEl.classList.contains('syncing'))) return
-        if (Date.now() - (window._dashLastLoaded || 0) < 10000) {
+        if (Date.now() - (window._dashLastLoaded || 0) < 3000) {
           console.log('[DASH] SSE ignoré — trop tôt depuis dernier loadDashboard (' + _src + ')')
           window._lastSyncTime = Date.now()
           return
@@ -1457,8 +1457,8 @@ function setupVisibilityRefresh() {
 }
 
 function renderDashboard(data) {
-  console.log('[DASH] renderDashboard, reset _dashUserFiltered=false')
-  _dashUserFiltered = false
+  var _savedUserFiltered = _dashUserFiltered
+  console.log('[DASH] renderDashboard, _dashUserFiltered=' + _savedUserFiltered)
   const { articles, sharepoint, synced } = data
   dashContent.innerHTML = ''
 
@@ -2094,6 +2094,7 @@ function renderDashboard(data) {
   })
 
   if (_baseItems.length > 0) applyGlobalFilters()
+  _dashUserFiltered = _savedUserFiltered
 }
 
 function computeClientStats(headers, items) {

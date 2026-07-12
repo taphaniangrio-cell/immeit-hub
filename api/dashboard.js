@@ -88,14 +88,17 @@ module.exports = requireAuth(async (req, res) => {
 
     var displayData;
     if (sharepointData && sharepointData.connected && sharepointData.items?.length > 0) {
+      var isLive = liveSource === 'client_credentials' || liveSource === 'device_code';
       displayData = {
         headers: sharepointData.headers,
         items: sharepointData.items,
-        syncedAt: new Date().toISOString(),
+        syncedAt: isLive ? new Date().toISOString() : (sharepointData.lastSync || new Date().toISOString()),
         source: liveSource || 'sharepoint_live',
         _rawCount: sharepointData._rawCount,
       };
-      syncEngine.saveAll(displayData).catch(function() {});
+      if (isLive) {
+        syncEngine.saveAll(displayData).catch(function() {});
+      }
     } else {
       displayData = null;
     }
