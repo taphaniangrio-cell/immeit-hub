@@ -1285,30 +1285,17 @@ async function handleDashSync() {
   var btn = document.getElementById('btn-dash-sync')
   if (!btn || btn.classList.contains('syncing')) return
   btn.classList.add('syncing')
+  showToast('Synchronisation en cours…', 'info', 30000)
   try {
     const result = await api('/sync', { method: 'POST', timeout: 90000 })
-    if (result.success && result.count > 0) {
-      showToast(result.message || result.count + ' lignes synchronisées ✓', 'success')
-    } else {
-      showToast(result.message || 'Aucune donnée disponible', 'warning')
-    }
-    if (result.success && result.items && result.items.length > 0 && result.headers) {
-      var syncData = {
-        articles: window._dashLastData ? window._dashLastData.articles : null,
-        sharepoint: { connected: true, lastSync: result.syncedAt },
-        synced: { headers: result.headers, items: result.items, syncedAt: result.syncedAt, source: result.source, _rawCount: result.rawCount }
-      }
-      window._dashLastData = syncData
-      try { localStorage.setItem('immeit_dash_cache', JSON.stringify({ ...syncData, _cachedAt: Date.now() })) } catch {}
-      renderDashboard(syncData)
-      updateDashInfo()
-    } else if (!_dashUserFiltered) {
+    if (result.success) {
+      showToast(result.message || 'Synchronisation réussie', 'success')
       await loadDashboard()
     } else {
-      console.log('[DASH] Sync effectué, loadDashboard ignoré — filtres actifs')
+      showToast(result.message || 'Synchronisation échouée', 'error')
     }
   } catch (err) {
-    showToast('Erreur synchronisation: ' + err.message, 'error')
+    showToast('Erreur lors de la synchronisation', 'error')
   } finally {
     btn.classList.remove('syncing')
   }
@@ -1319,16 +1306,10 @@ async function handleDashRefresh() {
   if (!btn || btn.classList.contains('syncing')) return
   btn.classList.add('syncing')
   try {
-    if (window._dashLastData) {
-      renderDashboard(window._dashLastData)
-      updateDashInfo()
-      showToast('Affichage rafraîchi ✓', 'success', 1500)
-    } else {
-      await loadDashboard()
-      showToast('Données actualisées ✓', 'success')
-    }
+    await loadDashboard()
+    showToast('Données actualisées', 'success')
   } catch (err) {
-    showToast('Erreur: ' + err.message, 'error')
+    showToast('Erreur lors du rafraîchissement', 'error')
   } finally {
     btn.classList.remove('syncing')
   }
