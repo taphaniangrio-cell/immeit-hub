@@ -34,9 +34,10 @@ module.exports = async (req, res) => {
 async function handleSync(req, res) {
   try {
     const result = await autoSync.performSync();
-    return res.status(200).json(result);
+    const status = result.success ? 200 : 502;
+    return res.status(status).json(result);
   } catch (err) {
     log('error', 'sync_endpoint_failed', { error: err.message });
-    return res.status(200).json({ success: false, count: 0, message: 'Échec synchronisation : ' + err.message });
+    return res.status(500).json({ success: false, count: 0, message: 'Échec synchronisation : ' + err.message });
   }
 }

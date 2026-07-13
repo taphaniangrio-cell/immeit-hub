@@ -4,7 +4,7 @@ const { log } = require('../lib/logger');
 const cors = require('../lib/cors');
 const sharepoint = require('../lib/sharepoint');
 
-const LIVE_TIMEOUT = 15000;
+const LIVE_TIMEOUT = 30000;
 
 module.exports = requireAuth(async (req, res) => {
   if (cors(res, req)) return;
@@ -93,20 +93,26 @@ async function saveToDBCache(data) {
 }
 
 async function loadCachedData() {
-  const DB_TIMEOUT = 5000;
+  const DB_TIMEOUT = 10000;
 
   const dbPromise = (async () => {
-    try {
-      const r = await Promise.race([
-        db.query(`SELECT cache_data FROM dashboard_cache WHERE cache_key = 'sharepoint_suivi_2026'`),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('db_cache_timeout')), DB_TIMEOUT)),
-      ]);
-      if (r.rows.length > 0) {
-        let data = r.rows[0].cache_data;
-        if (typeof data === 'string') { try { data = JSON.parse(data); } catch {} }
-        if (data && data.items && data.items.length > 0) return data;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await Promise.race([
+          db.query(`SELECT cache_data FROM dashboard_cache WHERE cache_key = 'sharepoint_suivi_2026'`),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('db_cache_timeout')), DB_TIMEOUT)),
+        ]);
+        if (r.rows.length > 0) {
+          let data = r.rows[0].cache_data;
+          if (typeof data === 'string') { try { data = JSON.parse(data); } catch {} }
+          if (data && data.items && data.items.length > 0) return data;
+        }
+        break;
+      } catch (e) {
+        log('warn', 'dash_cache_db_read_failed', { error: e?.message, attempt });
+        if (attempt < 1) await new Promise(r => setTimeout(r, 500));
       }
-    } catch (e) { log('warn', 'dash_cache_db_read_failed', { error: e?.message }); }
+    }
     return null;
   })();
 
