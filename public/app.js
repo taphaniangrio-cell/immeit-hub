@@ -1391,13 +1391,14 @@ function startSyncTimer() {
   window._syncTimerInterval = setInterval(tick, 5000)
   window._dashPollInterval = setInterval(function() {
     var _hf = _dashHasActiveFilters()
-    if (!_hf && Date.now() - (window._dashLastLoaded || 0) > 120000) {
+    // Réduction du délai à 15 secondes pour imiter le temps réel sur Vercel
+    if (!_hf && Date.now() - (window._dashLastLoaded || 0) > 15000) {
       console.log('[DASH] Poll → pas de filtres actifs, reload')
       loadDashboard()
     } else if (_hf) {
       console.log('[DASH] Poll → filtres actifs, pas de reload')
     }
-  }, 30000)
+  }, 15000)
   connectSSE()
   setupVisibilityRefresh()
 }
