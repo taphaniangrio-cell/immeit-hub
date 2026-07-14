@@ -46618,7 +46618,7 @@
       "stockage": "Non",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• Cinq (5) tests sans accord dans  le Check Out Protocol \n - 1 PNC Flow - Pump (AVL)\n - 2 Pre. Validation APC (executed et certificate)\n - 2 Calibration APC (executed et certificate)\nPour stockage sur ADVESO: Vérification Conforme effectuée hors site par l'entreprise AVL le 28/05/2026 avec les techniciens Benjamin FALK, Robert HOEFLER  & Christian SCHMITT",
-      "etat_davance_de_la_demande": "En attente de traitement IMMEIT",
+      "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -46644,7 +46644,7 @@
       "ecart_dheure_contractuel": ""
     }
   ],
-  "syncedAt": "2026-07-14T13:40:44.047Z",
+  "syncedAt": "2026-07-14T13:41:43.962Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)"
