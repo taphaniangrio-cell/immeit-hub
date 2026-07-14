@@ -41971,7 +41971,7 @@
       "stockage_adveso": "Non concerné",
       "stockage": "Oui",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Un VM12 COR annoncée sur le titre du rapport est absente du plan de prévention (PREV et REG mentionnées avec leurs OT) et les 4 opérations VM12 sur le PMP du CR n'ont pas été réalisées\n• Absence de REG et de PREV sur la nommenclature du rapport\n• Absence OS42\n• Un numéro banc 1092691 non annoncé apparait sur sur l'un des deux CVs joints\n• Sept opérations non réalisées (7NR) sans ZSAD dont 3 PREV12 et 4 VM12 sans commentaire sur le PMP du CR\n -2 PREV12 avec le commentaire \"onduleur HS\"\n -1 PREV12 avec le commentaire \"sera réalisé lors de la campagne annuelle.\"\nFaits Marquants: Dérive constaté des pyromètres des 2 banc. Il devient nécéssaire qu'ils soient étalonnés. En attendant j'ai repris 2 VM pour limiter la dérive des capteurs.\nRapport reçu à nouveau le 02/07/2026\n• Correction apporte sur le titre du CR (2026_06-1090660_B_TRANSMIS_4_POSTE_PRE_12M) sans la partie VM\n• COR du BE1092691 supprimé maintenant\n• Pas de changement pour le reste",
+      "remarque_immeit": "• Un VM12 COR annoncée sur le titre du rapport est absente du plan de prévention (PREV et REG mentionnées avec leurs OT) et les 4 opérations VM12 sur le PMP du CR n'ont pas été réalisées\n• Absence de REG et de PREV sur la nommenclature du rapport\n• Absence OS42\n• Un numéro banc 1092691 non annoncé apparait sur sur l'un des deux CVs joints\n• Sept opérations non réalisées (7NR) sans ZSAD dont 3 PREV12 et 4 VM12 sans commentaire sur le PMP du CR\n -2 PREV12 avec le commentaire \"onduleur HS\"\n -1 PREV12 avec le commentaire \"sera réalisé lors de la campagne annuelle.\"\nFaits Marquants: Dérive constaté des pyromètres des 2 banc. Il devient nécéssaire qu'ils soient étalonnés. En attendant j'ai repris 2 VM pour limiter la dérive des capteurs.\nRapport reçu à nouveau le 02/07/2026\n• Correction apportée sur le titre du CR (2026_06-1090660_B_TRANSMIS_4_POSTE_PRE_12M) sans la partie VM\n• COR du BE1092691 supprimé maintenant\n• Pas de changement pour le reste",
       "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "mail correction le 30/06",
       "conformit_de_la_demande": "Oui",
@@ -44961,7 +44961,7 @@
       "stockage_adveso": "Oui",
       "stockage": "Oui",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Côté PREV, RAS. A noter quatre opérations non réalisées (4NR [2PREV3 et 2PREV6]) pour le même motif \"CLA-755 retiré du contrat\"\n• Sur les CR et CR provisoir, absence du VM6 et de son numéro OT malgré que les opérations VM6 sont bien mentionnées sur le PMP\n  * Ce qui est mentionné: N° OT (429895179 et 430223588) Plan d'entretien (PRE 6M et PRE 3M)\n• La date de Validité bouteille (Essence) (14/06/2026) est antérieure à la date de vérifcation 17/06/2026 sur Bouteille test Essence-Diesel+Compa POSTCAT BRC2 et Bouteille test Essence-Diesel+Compa PRECAT BRC2\n• Absence signature intervenant et nom de l'approbateur sur Bouteille test Essence-Diesel+Compa POSTCAT BRC2 et Bouteille test Essence-Diesel+Compa PRECAT BRC2\nPour stockage ADVESO: Vérification conforme sur site effectuée le 16/06/2026 par l'entreprise INDUSTRELEC avec le technicien Julien BERUT",
+      "remarque_immeit": "• Côté PREV, RAS. A noter quatre opérations non réalisées (4NR [2PREV3 et 2PREV6]) pour le même motif \"CLA-755 retiré du contrat\"\n• Sur les CR et CR provisoir, absence du VM6 et de son numéro OT malgré que les opérations VM6 sont bien mentionnées sur le PMP\n  * Ce qui est mentionné: N° OT (429895179 et 430223588) Plan d'entretien (PRE 6M et PRE 3M)\n• La date de Validit bouteille (Essence) (14/06/2026) est antérieure à la date de vérifcation 17/06/2026 sur Bouteille test Essence-Diesel+Compa POSTCAT BRC2 et Bouteille test Essence-Diesel+Compa PRECAT BRC2\n• Absence signature intervenant et nom de l'approbateur sur Bouteille test Essence-Diesel+Compa POSTCAT BRC2 et Bouteille test Essence-Diesel+Compa PRECAT BRC2\nPour stockage ADVESO: Vérification conforme sur site effectuée le 16/06/2026 par l'entreprise INDUSTRELEC avec le technicien Julien BERUT",
       "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "Oui",
@@ -46572,7 +46572,7 @@
       "stockage": "Non",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• Trois (3) tests sans accord dans  le Check Out Protocol \n - 1 PNC Flow - Pumpe (AVL)\n - 2 Validation APC (executed et certificate)\nPour stockage sur ADVESO: Vérification Conforme effectuée hors site par l'entreprise AVL le 01/06/2026 avec les techniciens Sasa PANCIC, Robert HOEFLER, Thomas Faul and-Kranz  & Wolfgang Schlatzer",
-      "etat_davance_de_la_demande": "En attente de traitement IMMEIT",
+      "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -46618,7 +46618,7 @@
       "stockage": "Non",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• Cinq (5) tests sans accord dans  le Check Out Protocol \n - 1 PNC Flow - Pump (AVL)\n - 2 Pre. Validation APC (executed et certificate)\n - 2 Calibration APC (executed et certificate)\nPour stockage sur ADVESO: Vérification Conforme effectuée hors site par l'entreprise AVL le 28/05/2026 avec les techniciens Benjamin FALK, Robert HOEFLER  & Christian SCHMITT",
-      "etat_davance_de_la_demande": "En attente de traitement IMMEIT",
+      "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -46644,9 +46644,9 @@
       "ecart_dheure_contractuel": ""
     }
   ],
-  "syncedAt": "2026-07-14T22:59:30.349Z",
+  "syncedAt": "2026-07-14T22:59:59.335Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-14T22:35:15Z"
+  "lastModifiedDateTime": "2026-07-14T22:59:11Z"
 }
