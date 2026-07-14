@@ -15,55 +15,80 @@ module.exports = requireAuth(async (req, res) => {
       loadCachedData(),
     ]);
 
-    let sharepointData = null;
-    let liveSource = null;
+    const MAX_CACHE_AGE_MS = 5 * 60 * 1000; // 5 minutes
+    let isCacheFresh = false;
+    let displayData = cachedData;
 
-    try {
-      sharepointData = await timeoutPromise(sharepoint.fetchDashboardData(), LIVE_TIMEOUT);
-      if (sharepointData && sharepointData.connected) liveSource = sharepointData.source || 'live';
-    } catch (e) {
-      log('warn', 'dash_sp_live_failed', { error: e.message });
+    if (cachedData && cachedData.syncedAt) {
+      const age = Date.now() - new Date(cachedData.syncedAt).getTime();
+      if (age < MAX_CACHE_AGE_MS) {
+        isCacheFresh = true;
+      }
     }
 
-    let displayData;
-
-    if (sharepointData && sharepointData.connected && sharepointData.items?.length > 0) {
-      let liveItems = sharepointData.items;
-      if (sharepointData.headers && liveItems.length > 0) {
-        const liveFiltered = sharepoint.filterDataRows(liveItems, sharepointData.headers);
-        if (liveFiltered.length !== liveItems.length) {
-          log('info', 'dash_live_filtered', { before: liveItems.length, after: liveFiltered.length });
-          liveItems = liveFiltered;
+    const triggerBackgroundRefresh = async () => {
+      try {
+        const sharepointData = await timeoutPromise(sharepoint.fetchDashboardData(), LIVE_TIMEOUT);
+        if (sharepointData && sharepointData.connected && sharepointData.items?.length > 0) {
+          let liveItems = sharepointData.items;
+          if (sharepointData.headers && liveItems.length > 0) {
+            const liveFiltered = sharepoint.filterDataRows(liveItems, sharepointData.headers);
+            if (liveFiltered.length !== liveItems.length) {
+              log('info', 'dash_live_filtered', { before: liveItems.length, after: liveFiltered.length });
+              liveItems = liveFiltered;
+            }
+          }
+          const newData = {
+            headers: sharepointData.headers,
+            items: liveItems,
+            syncedAt: new Date().toISOString(),
+            source: sharepointData.source || 'sharepoint_live',
+            _rawCount: sharepointData._rawCount,
+          };
+          await saveToDBCache(newData);
+          try {
+            const eventBus = require('../lib/events');
+            eventBus.emit('dashboard-updated', {
+              source: newData.source,
+              items: newData.items.length,
+              headers: newData.headers,
+              syncedAt: newData.syncedAt,
+            });
+          } catch (e) {}
+          return newData;
         }
+      } catch (e) {
+        log('warn', 'dash_sp_live_bg_failed', { error: e.message });
       }
-      displayData = {
-        headers: sharepointData.headers,
-        items: liveItems,
-        syncedAt: new Date().toISOString(),
-        source: liveSource || 'sharepoint_live',
-        _rawCount: sharepointData._rawCount,
-      };
-      saveToDBCache(displayData).catch(function() {});
+      return null;
+    };
+
+    if (!displayData || !displayData.items || displayData.items.length === 0) {
+      // Pas de cache, on DOIT attendre la requête live pour ne pas renvoyer vide
+      const newData = await triggerBackgroundRefresh();
+      if (newData) displayData = newData;
     } else {
-      displayData = cachedData;
-      if (displayData && displayData.items && displayData.headers && displayData.items.length > 0) {
+      // Cache existant. Si trop vieux, on rafraîchit en arrière-plan sans bloquer
+      if (!isCacheFresh) {
+        triggerBackgroundRefresh().catch(() => {});
+      }
+      
+      // Defense in depth : filtrer les données du cache avant de les envoyer
+      if (displayData.items && displayData.headers && displayData.items.length > 0) {
         const filtered = sharepoint.filterDataRows(displayData.items, displayData.headers);
         if (filtered.length !== displayData.items.length) {
           displayData = { ...displayData, items: filtered, _rawCount: displayData.items.length };
-          saveToDBCache(displayData).catch(function() {});
         }
       }
     }
 
     if (!displayData || !displayData.items || displayData.items.length === 0) {
-      log('warn', 'dash_no_data', { live: !!sharepointData?.connected, cached: !!cachedData });
+      log('warn', 'dash_no_data', { cached: !!cachedData });
     }
 
     return res.status(200).json({
       articles: articleStats,
-      sharepoint: sharepointData && sharepointData.connected
-        ? { connected: true, lastSync: sharepointData.lastSync || displayData?.syncedAt }
-        : { connected: false },
+      sharepoint: { connected: true, lastSync: displayData?.syncedAt },
       synced: displayData,
     });
   } catch (err) {
