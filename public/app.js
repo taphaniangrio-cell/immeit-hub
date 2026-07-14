@@ -1271,6 +1271,21 @@ async function loadDashboard(silent = false) {
     }
     updateDashInfo()
     startSyncTimer()
+
+    // Browser-Driven Background Sync
+    if (data.needsBackgroundSync && !window._isBackgroundSyncing) {
+      console.log('[DASH] needsBackgroundSync détecté (cache > 1min). Lancement de /sync en arrière-plan...');
+      window._isBackgroundSyncing = true;
+      api('/sync', { method: 'POST', timeout: 60000 })
+        .then(res => {
+          if (res.success) {
+            console.log('[DASH] Synchronisation silencieuse réussie, mise à jour de l\'UI...');
+            loadDashboard(true);
+          }
+        })
+        .catch(err => console.log('[DASH] Erreur background sync:', err))
+        .finally(() => { window._isBackgroundSyncing = false; });
+    }
   } catch (err) {
     if (!loadCachedDashboard()) {
       dashError.classList.remove('hidden')

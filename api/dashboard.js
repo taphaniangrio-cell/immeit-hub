@@ -15,7 +15,7 @@ module.exports = requireAuth(async (req, res) => {
       loadCachedData(),
     ]);
 
-    const MAX_CACHE_AGE_MS = 5 * 60 * 1000; // 5 minutes
+    const MAX_CACHE_AGE_MS = 60 * 1000; // 1 minute
     let isCacheFresh = false;
     let displayData = cachedData;
 
@@ -26,54 +26,21 @@ module.exports = requireAuth(async (req, res) => {
       }
     }
 
-    const triggerBackgroundRefresh = async () => {
-      try {
-        const sharepointData = await timeoutPromise(sharepoint.fetchDashboardData(), LIVE_TIMEOUT);
-        if (sharepointData && sharepointData.connected && sharepointData.items?.length > 0) {
-          let liveItems = sharepointData.items;
-          if (sharepointData.headers && liveItems.length > 0) {
-            const liveFiltered = sharepoint.filterDataRows(liveItems, sharepointData.headers);
-            if (liveFiltered.length !== liveItems.length) {
-              log('info', 'dash_live_filtered', { before: liveItems.length, after: liveFiltered.length });
-              liveItems = liveFiltered;
-            }
-          }
-          const newData = {
-            headers: sharepointData.headers,
-            items: liveItems,
-            syncedAt: new Date().toISOString(),
-            source: sharepointData.source || 'sharepoint_live',
-            _rawCount: sharepointData._rawCount,
-          };
-          await saveToDBCache(newData);
-          try {
-            const eventBus = require('../lib/events');
-            eventBus.emit('dashboard-updated', {
-              source: newData.source,
-              items: newData.items.length,
-              headers: newData.headers,
-              syncedAt: newData.syncedAt,
-            });
-          } catch (e) {}
-          return newData;
-        }
-      } catch (e) {
-        log('warn', 'dash_sp_live_bg_failed', { error: e.message });
-      }
-      return null;
-    };
-
     if (!displayData || !displayData.items || displayData.items.length === 0) {
-      // Pas de cache, on DOIT attendre la requête live pour ne pas renvoyer vide
-      const newData = await triggerBackgroundRefresh();
-      if (newData) displayData = newData;
-    } else {
-      // Cache existant. Si trop vieux, on rafraîchit en arrière-plan sans bloquer
-      if (!isCacheFresh) {
-        triggerBackgroundRefresh().catch(() => {});
+      // Pas de cache du tout, on attend une synchronisation live bloquante
+      // (Ceci ne devrait normalement jamais arriver en production)
+      const sharepointData = await timeoutPromise(sharepoint.fetchDashboardData(), LIVE_TIMEOUT);
+      if (sharepointData && sharepointData.items?.length > 0) {
+        displayData = {
+          headers: sharepointData.headers,
+          items: sharepointData.items,
+          syncedAt: new Date().toISOString(),
+          source: sharepointData.source || 'sharepoint_live',
+        };
+        await saveToDBCache(displayData);
       }
-      
-      // Defense in depth : filtrer les données du cache avant de les envoyer
+    } else {
+      // Filtrer les données du cache avant de les envoyer
       if (displayData.items && displayData.headers && displayData.items.length > 0) {
         const filtered = sharepoint.filterDataRows(displayData.items, displayData.headers);
         if (filtered.length !== displayData.items.length) {
@@ -90,6 +57,7 @@ module.exports = requireAuth(async (req, res) => {
       articles: articleStats,
       sharepoint: { connected: true, lastSync: displayData?.syncedAt },
       synced: displayData,
+      needsBackgroundSync: !isCacheFresh
     });
   } catch (err) {
     log('error', 'dashboard_error', { error: err.message, stack: err.stack });
