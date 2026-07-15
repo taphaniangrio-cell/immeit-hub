@@ -46707,8 +46707,8 @@
       "date_dernire_maj_immeit": "46218",
       "conformit__la_premire_diffusion": "",
       "stockage_adveso": "",
-      "stockage": "",
-      "mise__jour_kpi": "",
+      "stockage": "Non concerné",
+      "mise__jour_kpi": "Non",
       "remarque_immeit": "",
       "etat_davance_de_la_demande": "",
       "commentaire_p2m": "",
@@ -46736,9 +46736,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-15T15:05:55.270Z",
+  "syncedAt": "2026-07-15T15:06:52.208Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
-  "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-15T15:04:38Z"
+  "lastModifiedBy": "SIDOINE ISSA SIGA DIATTA (EXTERNAL)",
+  "lastModifiedDateTime": "2026-07-15T15:06:21Z"
 }
