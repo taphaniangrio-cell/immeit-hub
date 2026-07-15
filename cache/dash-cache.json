@@ -46664,12 +46664,12 @@
       "stockage": "Non",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• RAS",
-      "etat_davance_de_la_demande": "En attente validation P2M",
-      "commentaire_p2m": "",
-      "conformit_de_la_demande": "",
+      "etat_davance_de_la_demande": "Validée par P2M : A solder par IMMEIT",
+      "commentaire_p2m": "OK pour stockage",
+      "conformit_de_la_demande": "Oui",
       "date_dvaluation_en_cas_de_non_conformit": "",
       "explication_en_cas_de_nonconformit": "",
-      "date_de_validation_p2m": "",
+      "date_de_validation_p2m": "46218",
       "dure_de_traitement_jours_1": "",
       "echance_contractuelle_jours_1": "",
       "ecart_de_traitement_jour_1": "",
@@ -46690,9 +46690,9 @@
       "ecart_dheure_contractuel": ""
     }
   ],
-  "syncedAt": "2026-07-15T14:09:52.034Z",
+  "syncedAt": "2026-07-15T14:10:40.735Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "HERVE CHARAVEL (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-15T14:09:07Z"
+  "lastModifiedDateTime": "2026-07-15T14:09:57Z"
 }
