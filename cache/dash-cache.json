@@ -46613,7 +46613,7 @@
       "date_de_rception_des_demandes": "",
       "date_de_traitement_immeit": "46213",
       "date_dernire_maj_immeit": "46213",
-      "conformit__la_premire_diffusion": "",
+      "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
@@ -46659,7 +46659,7 @@
       "date_de_rception_des_demandes": "",
       "date_de_traitement_immeit": "46218",
       "date_dernire_maj_immeit": "46218",
-      "conformit__la_premire_diffusion": "",
+      "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "Non concerné",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
@@ -46690,9 +46690,9 @@
       "ecart_dheure_contractuel": ""
     }
   ],
-  "syncedAt": "2026-07-15T14:04:53.206Z",
+  "syncedAt": "2026-07-15T14:05:40.673Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-15T14:04:42Z"
+  "lastModifiedDateTime": "2026-07-15T14:05:29Z"
 }
