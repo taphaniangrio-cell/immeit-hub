@@ -46384,11 +46384,11 @@
       "date_de_traitement_immeit": "46213",
       "date_dernire_maj_immeit": "46213",
       "conformit__la_premire_diffusion": "Oui",
-      "stockage_adveso": "",
-      "stockage": "Non",
+      "stockage_adveso": "Oui",
+      "stockage": "Oui",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• RAS; cet instrument satisfait aux exigences\nPour stockage sur ADVESO: Vérification conforme effectuée sur site par l'entreprise ZWICK ROELL le 06/07/2026 par le technicien Yogananth SIVARASA",
-      "etat_davance_de_la_demande": "Validée par P2M : A solder par IMMEIT",
+      "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "bon pour stockage",
       "conformit_de_la_demande": "Oui",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -46476,7 +46476,7 @@
       "date_de_traitement_immeit": "46213",
       "date_dernire_maj_immeit": "46213",
       "conformit__la_premire_diffusion": "Oui",
-      "stockage_adveso": "",
+      "stockage_adveso": "Oui",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• RAS \n• A noter juste l'absence de la nature de l'intervention au niveau de la page de garde INDUS\nPour stockage sur ADVESO: Etalonnage Etalonné sur site par l'entreprise ATLANTIC MESURE 3D le 01/07/2026 avec le technicien Jacky LAHET",
@@ -46644,9 +46644,9 @@
       "ecart_dheure_contractuel": ""
     }
   ],
-  "syncedAt": "2026-07-15T09:11:38.414Z",
+  "syncedAt": "2026-07-15T09:12:14.008Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-15T09:09:53Z"
+  "lastModifiedDateTime": "2026-07-15T09:11:48Z"
 }
