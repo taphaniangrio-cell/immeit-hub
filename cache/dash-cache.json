@@ -46661,10 +46661,10 @@
       "date_dernire_maj_immeit": "46218",
       "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "Non concerné",
-      "stockage": "Non",
+      "stockage": "Oui",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• RAS",
-      "etat_davance_de_la_demande": "Validée par P2M : A solder par IMMEIT",
+      "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "OK pour stockage",
       "conformit_de_la_demande": "Oui",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -46736,9 +46736,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-15T15:35:40.314Z",
+  "syncedAt": "2026-07-15T15:35:52.165Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "IBRAHIMA KHALIL SECK (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-15T15:33:47Z"
+  "lastModifiedDateTime": "2026-07-15T15:35:41Z"
 }
