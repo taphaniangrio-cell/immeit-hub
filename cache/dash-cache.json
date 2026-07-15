@@ -46652,9 +46652,9 @@
       "nature_de_la_demande": "Réglementaire",
       "nbe_gerico_apex": "1039115",
       "nom_du_banc_nom_entreprise": "SALLE BRUITS PARASITES",
-      "priodicit": "",
+      "priodicit": "REG 12",
       "not": "430497201",
-      "date_de_dpt_du_dossier_sur_docinfo": "",
+      "date_de_dpt_du_dossier_sur_docinfo": "44455",
       "date_du_dpt_du_dossier_sur_docinfo_avec_une_date": "",
       "date_de_rception_des_demandes": "",
       "date_de_traitement_immeit": "",
@@ -46690,9 +46690,9 @@
       "ecart_dheure_contractuel": ""
     }
   ],
-  "syncedAt": "2026-07-15T13:44:51.888Z",
+  "syncedAt": "2026-07-15T13:45:41.433Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "SIDOINE ISSA SIGA DIATTA (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-15T13:44:29Z"
+  "lastModifiedDateTime": "2026-07-15T13:45:16Z"
 }
