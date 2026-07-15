@@ -46709,7 +46709,7 @@
       "stockage_adveso": "",
       "stockage": "Non concerné",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Deux opérations non conformes:\n - [2026630-0765-GE-7392-FA As Found]\n - \n - \nPour stockage sur ADVESO: Vérification Conforme effectuée hors site par l'entreprise HEXAGON le 30/06/2026 avec les techniciens BRIMBOEUF.D  & D.BUQUET",
+      "remarque_immeit": "• Deux opérations non conformes:\n - [2026630-0765-GE-7392-FA As Found]\n - [2026630-7392-FA As Found]\nPour stockage sur ADVESO: Vérification Conforme effectuée hors site par l'entreprise HEXAGON le 30/06/2026 avec les techniciens BRIMBOEUF.D  & D.BUQUET",
       "etat_davance_de_la_demande": "",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
@@ -46736,9 +46736,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-15T15:18:52.446Z",
+  "syncedAt": "2026-07-15T15:19:41.333Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-15T15:18:19Z"
+  "lastModifiedDateTime": "2026-07-15T15:19:06Z"
 }
