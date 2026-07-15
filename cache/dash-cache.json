@@ -44961,7 +44961,7 @@
       "stockage_adveso": "Oui",
       "stockage": "Oui",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Côté PREV, RAS. A noter quatre opérations non réalisées (4NR [2PREV3 et 2PREV6]) pour le même motif \"CLA-755 retiré du contrat\"\n• Sur les CR et CR provisoir, absence du VM6 et de son numéro OT malgré que les opérations VM6 sont bien mentionnées sur le PMP\n  * Ce qui est mentionné: N° OT (429895179 et 430223588) Plan d'entretien (PRE 6M et PRE 3M)\n• La date de Validité bouteille (Essence) (14/06/2026) est antérieure à la date de vérifcation 17/06/2026 sur Bouteille test Essence-Diesel+Compa POSTCAT BRC2 et Bouteille test Essence-Diesel+Compa PRECAT BRC2\n• Absence signature intervenant et nom de l'approbateur sur Bouteille test Essence-Diesel+Compa POSTCAT BRC2 et Bouteille test Essence-Diesel+Compa PRECAT BRC2\nPour stockage ADVESO: Vérification conforme sur site effectuée le 16/06/2026 par l'entreprise INDUSTRELEC avec le technicien Julien BERUT",
+      "remarque_immeit": "• Côté PREV, RAS. A noter quatre opérations non réalisées (4NR [2PREV3 et 2PREV6]) pour le même motif \"CLA-755 retiré du contrat\"\n• Sur les CR et CR provisoir, absence du VM6 et de son numéro OT malgré que les opérations VM6 sont bien mentionnées sur le PMP\n  * Ce qui est mentionné: N° OT (429895179 et 430223588) Plan d'entretien (PRE 6M et PRE 3M)\n• La date de Validit bouteille (Essence) (14/06/2026) est antérieure à la date de vérifcation 17/06/2026 sur Bouteille test Essence-Diesel+Compa POSTCAT BRC2 et Bouteille test Essence-Diesel+Compa PRECAT BRC2\n• Absence signature intervenant et nom de l'approbateur sur Bouteille test Essence-Diesel+Compa POSTCAT BRC2 et Bouteille test Essence-Diesel+Compa PRECAT BRC2\nPour stockage ADVESO: Vérification conforme sur site effectuée le 16/06/2026 par l'entreprise INDUSTRELEC avec le technicien Julien BERUT",
       "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "Oui",
@@ -46644,7 +46644,7 @@
       "ecart_dheure_contractuel": ""
     }
   ],
-  "syncedAt": "2026-07-15T03:56:31.682Z",
+  "syncedAt": "2026-07-15T03:57:16.962Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
