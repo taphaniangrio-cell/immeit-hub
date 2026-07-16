@@ -1,30 +1,67 @@
+const fs = require('fs');
+const path = require('path');
+
+function initEnv() {
+  const envPath = path.join(__dirname, '..', '.env');
+  if (!fs.existsSync(envPath)) return;
+  fs.readFileSync(envPath, 'utf8').split(/\r?\n/).forEach(line => {
+    const t = line.trim();
+    if (!t || t.startsWith('#')) return;
+    const i = t.indexOf('=');
+    if (i < 1) return;
+    const key = t.slice(0, i).trim();
+    const val = t.slice(i + 1).trim();
+    if (!process.env[key]) process.env[key] = val;
+  });
+}
+
+initEnv();
+
+if (!process.env.DATABASE_URL) {
+  console.error('  ❌ DATABASE_URL n\'est pas configuré.');
+  console.error('  Copiez .env.example en .env et renseignez vos variables.');
+  process.exit(1);
+}
+
 const { Client } = require('pg');
 
 async function main() {
-  const c = new Client({
+  console.log('  Interrogation du cache de synchronisation PostgreSQL...\n');
+
+  const client = new Client({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
   });
-  await c.connect();
 
-  const keys = ['sharepoint_suivi_2026', 'msal_token_cache', 'diff_prev_state'];
-  for (const key of keys) {
-    try {
-      const r = await c.query(
-        'SELECT cache_key, updated_at, pg_column_size(cache_data) as size FROM dashboard_cache WHERE cache_key = $1',
-        [key]
-      );
-      if (r.rows.length > 0) {
-        const row = r.rows[0];
-        console.log(`${row.cache_key} | ${row.updated_at} | ${row.size} bytes`);
-      } else {
-        console.log(`${key} | NOT FOUND`);
+  try {
+    await client.connect();
+    console.log('  Connecté à la base, analyse des clés de cache :\n');
+    console.log('Clé de Cache          | Dernière modification   | Taille');
+    console.log('─'.repeat(22) + '┼' + '─'.repeat(23) + '┼' + '─'.repeat(10));
+
+    const keys = ['sharepoint_suivi_2026', 'msal_token_cache', 'diff_prev_state'];
+    for (const key of keys) {
+      try {
+        const r = await client.query(
+          'SELECT cache_key, updated_at, pg_column_size(cache_data) as size FROM dashboard_cache WHERE cache_key = $1',
+          [key]
+        );
+        if (r.rows.length > 0) {
+          const row = r.rows[0];
+          const date = new Date(row.updated_at).toLocaleString('fr-FR');
+          const size = `${Number(row.size).toLocaleString('fr-FR')} octets`;
+          console.log(`${row.cache_key.padEnd(21)} │ ${date.padEnd(21)} │ ${size}`);
+        } else {
+          console.log(`${key.padEnd(21)} │ ${'ABSENT'.padEnd(21)} │ -`);
+        }
+      } catch (e) {
+        console.log(`${key.padEnd(21)} │ ${'ERREUR'.padEnd(21)} │ ${e.message}`);
       }
-    } catch (e) {
-      console.log(`${key} | ERROR: ${e.message}`);
     }
+  } finally {
+    await client.end();
+    console.log('\n  Connexion fermée proprement.');
   }
-  await c.end();
 }
 
-main().catch(e => { console.error('FATAL:', e.message); process.exit(1); });
+main().catch(e => { console.error('\n  ❌ Erreur :', e.message); process.exit(1); });

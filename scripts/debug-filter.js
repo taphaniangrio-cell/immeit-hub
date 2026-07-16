@@ -1,18 +1,31 @@
 const fs = require('fs');
 const path = require('path');
-const envPath = path.join(__dirname, '..', '.env');
-fs.readFileSync(envPath, 'utf8').split('\n').forEach(l => {
-  const t = l.trim();
-  if (!t || t.startsWith('#')) return;
-  const i = t.indexOf('=');
-  if (i < 1) return;
-  if (!process.env[t.slice(0, i).trim()]) process.env[t.slice(0, i).trim()] = t.slice(i + 1).trim();
-});
+
+function initEnv() {
+  const envPath = path.join(__dirname, '..', '.env');
+  if (!fs.existsSync(envPath)) return;
+  fs.readFileSync(envPath, 'utf8').split(/\r?\n/).forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eqIndex = trimmed.indexOf('=');
+    if (eqIndex < 1) return;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const val = trimmed.slice(eqIndex + 1).trim();
+    if (!process.env[key]) process.env[key] = val;
+  });
+}
+
+initEnv();
 
 const { getGraphToken } = require('../lib/graph-auth');
-const sharepoint = require('../lib/sharepoint');
+
+const SITE_HOST = process.env.SHAREPOINT_SITE_HOST || 'shiftup.sharepoint.com';
+const SITE_PATH = process.env.SHAREPOINT_SITE_PATH || 'sites/P2M2022';
+const FILE_ID = process.env.SHAREPOINT_FILE_ID || '55686017-3ff9-43f7-ab28-5b910871a4b0';
+const SHEET_NAME = process.env.SHAREPOINT_SHEET_NAME || 'Suivi Demandes 2026';
 
 const FILLER_CHARS = new Set(['-', '.', '_', '|', '/', '\\', '*', '~', '#', 'N/A', 'n/a', 'na', 'N/D', 'n/d']);
+
 function isRealValue(v) {
   if (!v || typeof v !== 'string') return false;
   const t = v.trim();
@@ -21,47 +34,51 @@ function isRealValue(v) {
   return true;
 }
 
+async function fetchGraph(url, token) {
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+    },
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Graph API [${response.status}]: ${errorBody}`);
+  }
+  return response.json();
+}
+
 async function main() {
   const token = await getGraphToken({});
-  if (!token) { console.error('No token'); process.exit(1); }
-
-  const https = require('https');
-  const SITE_HOST = 'shiftup.sharepoint.com';
-  const SITE_PATH = 'sites/P2M2022';
-  const FILE_ID = '55686017-3ff9-43f7-ab28-5b910871a4b0';
-  const SHEET = 'Suivi Demandes 2026';
-
-  function httpsRequest(url, opts) {
-    return new Promise((resolve, reject) => {
-      const u = new URL(url);
-      const req = https.request({ hostname: u.hostname, path: u.pathname + u.search, method: 'GET', headers: opts.headers, timeout: 30000 }, res => {
-        let data = '';
-        res.on('data', c => data += c);
-        res.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('parse')); } });
-      });
-      req.on('error', reject);
-      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
-      req.end();
-    });
+  if (!token) {
+    console.error('  ❌ Erreur : Impossible d\'obtenir un jeton d\'accès MSAL valide.');
+    process.exit(1);
   }
 
-  const siteData = await httpsRequest(`https://graph.microsoft.com/v1.0/sites/${SITE_HOST}:/${SITE_PATH}`, { headers: { Authorization: `Bearer ${token}` } });
+  console.log('  Étape 1 : Résolution de l\'ID de site SharePoint...');
+  const siteData = await fetchGraph(`https://graph.microsoft.com/v1.0/sites/${SITE_HOST}:/${SITE_PATH}`, token);
   const siteId = siteData.id;
+  console.log(`    ID Site : ${siteId}`);
 
-  const fileData = await httpsRequest(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${FILE_ID}?$select=id,parentReference`, { headers: { Authorization: `Bearer ${token}` } });
+  console.log('  Étape 2 : Récupération des informations du lecteur...');
+  const fileData = await fetchGraph(`https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${FILE_ID}?$select=id,parentReference`, token);
   const driveId = fileData.parentReference.driveId;
   const itemId = fileData.id;
+  console.log(`    Drive ID : ${driveId}`);
 
-  const sheetData = await httpsRequest(
-    `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${itemId}/workbook/worksheets('${encodeURIComponent(SHEET)}')/usedRange`,
-    { headers: { Authorization: `Bearer ${token}` } }
+  console.log(`  Étape 3 : Lecture de la feuille "${SHEET_NAME}"...`);
+  const encodedSheet = encodeURIComponent(SHEET_NAME);
+  const sheetData = await fetchGraph(
+    `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${itemId}/workbook/worksheets('${encodedSheet}')/usedRange`,
+    token
   );
 
   const rows = sheetData.values || [];
   const headers = rows[0];
-  console.log('Total raw rows (including header):', rows.length);
-  console.log('Data rows:', rows.length - 1);
-  console.log('Headers count:', headers.length);
+  console.log(`\n  Statistiques globales :`);
+  console.log(`    Total lignes brutes (avec en-tête) : ${rows.length}`);
+  console.log(`    Lignes de données réelles : ${rows.length - 1}`);
+  console.log(`    Nombre de colonnes : ${headers.length}`);
 
   const keyPatterns = [
     /statut|status|état|etat.*avancement|etat.*demande|progress|étape/i,
@@ -75,7 +92,7 @@ async function main() {
     String(h).trim().toLowerCase().replace(/[\s\/]+/g, '_').replace(/[^a-z0-9_]/g, '')
   );
   const uniqueKeyCols = [...new Set(keyCols)];
-  console.log('Key columns:', uniqueKeyCols);
+  console.log(`  Colonnes clés : ${JSON.stringify(uniqueKeyCols)}`);
 
   const allItems = rows.slice(1).map((row, idx) => {
     const obj = { _row: idx + 2 };
@@ -96,30 +113,31 @@ async function main() {
     }
   });
 
-  console.log('\nKept:', kept.length);
-  console.log('Removed:', removed.length);
+  console.log(`\n  Résultats :`);
+  console.log(`    Lignes conservées : ${kept.length}`);
+  console.log(`    Lignes ignorées : ${removed.length}`);
 
   if (removed.length > 0) {
-    console.log('\nRemoved rows:');
-    removed.forEach(r => {
+    console.log('\n  Échantillon lignes ignorées :');
+    removed.slice(0, 5).forEach(r => {
       const filled = Object.keys(r).filter(k => k !== '_row' && isRealValue(r[k]));
-      console.log(`  Row ${r._row}: filled keys = [${filled.join(', ')}]`);
+      console.log(`    Ligne ${r._row}: champs remplis = [${filled.join(', ')}]`);
     });
+    if (removed.length > 5) console.log(`    ... et ${removed.length - 5} autre(s).`);
   }
 
-  // Find the row closest to being filtered (has only 1 real key value)
   const edgeRows = kept.filter(row => {
     let count = 0;
     for (const k of uniqueKeyCols) { if (isRealValue(row[k])) count++; }
     return count === 1;
   });
-  console.log('\nEdge rows (only 1 key column filled):', edgeRows.length);
-  edgeRows.forEach(r => {
+  console.log(`\n  Lignes à la limite du filtre : ${edgeRows.length}`);
+  edgeRows.slice(0, 5).forEach(r => {
     const filled = uniqueKeyCols.filter(k => isRealValue(r[k]));
-    console.log(`  Row ${r._row}: key filled = [${filled.join(', ')}] values = [${filled.map(k => r[k]).join(', ')}]`);
+    console.log(`    Ligne ${r._row}: [${filled.join(', ')}] = "${filled.map(k => r[k]).join(', ')}"`);
   });
 
   process.exit(0);
 }
 
-main().catch(e => { console.error(e.message); process.exit(1); });
+main().catch(e => { console.error('  ❌', e.message); process.exit(1); });
