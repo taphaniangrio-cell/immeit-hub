@@ -47033,11 +47033,11 @@
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• Pour la partie PREV, on a une opération non conforme (1NC) [Contrôle fonctionnement pressostat air alimentation des plots du marbre]=>\"Préssostat HS\" mais avec un ZSAD (Pressostat presence air du marbre non fonctionnel. ZSAD 430507516.)\n• On a vingt quatre opérations non réalisées (24NR) dont 11 pour un problème de périodicité, 02 pour le motif de \"machine révisé en 2025\"....\n• RAS sur l'ensemble des CVs ainsi que sur le TDM\nPour stockage sur ADVESO: Vérification Conforme sur site par l'entreprise INDUSTRELEC le 22/06/2026 avec Nicolas PIANON",
       "etat_davance_de_la_demande": "En attente validation P2M",
-      "commentaire_p2m": "OK pour stockage MAIS au 24/06/2026 pour ADVESO",
-      "conformit_de_la_demande": "Oui",
+      "commentaire_p2m": "",
+      "conformit_de_la_demande": "",
       "date_dvaluation_en_cas_de_non_conformit": "",
       "explication_en_cas_de_nonconformit": "",
-      "date_de_validation_p2m": "46219",
+      "date_de_validation_p2m": "",
       "dure_de_traitement_jours_1": "0",
       "echance_contractuelle_jours_1": "2",
       "ecart_de_traitement_jour_1": "-2",
@@ -47307,7 +47307,7 @@
       "stockage_adveso": "Non concerné",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "Incohérence sur le N°BE sur la première page de l'entête (1289828) et celui sur la deu\n• Absence de la fiche CERFA\n• Sept opérations non-réalisées (7NR) dont 5NR pour motif d'inéxistence et 2NR pour motif \"Pas de raccord de prise de pression\"",
+      "remarque_immeit": "• Incohérence sur le N° et la désignation du BE sur la première page de l'entête (1289828) et celui sur la deuxième page (1285409)\n• Absence de la fiche CERFA\n• Sept opérations non-réalisées (7NR) dont 5NR pour motif d'inéxistence et 2NR pour motif \"Pas de raccord de prise de pression\"",
       "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
@@ -47353,8 +47353,8 @@
       "stockage_adveso": "Non concerné",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Absence de la fiche CERFA\n• Sept opérations non-réalisées (7NR) dont 5NR pour motif d'inéxistence et 2NR pour motif \"Pas de raccord de prise de pression\"",
-      "etat_davance_de_la_demande": "",
+      "remarque_immeit": "• Incohérence sur le N°BE sur la première page de l'entête (1289828) et celui sur la deuxième page (1285410)\n• Absence de la fiche CERFA\n• Sept opérations non-réalisées (7NR) dont 5NR pour motif d'inéxistence et 2NR pour motif \"Pas de raccord de prise de pression\"",
+      "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -47380,9 +47380,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-16T14:44:25.755Z",
+  "syncedAt": "2026-07-16T14:45:24.595Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "IBRAHIMA KHALIL SECK (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-16T14:43:54Z"
+  "lastModifiedDateTime": "2026-07-16T14:44:41Z"
 }
