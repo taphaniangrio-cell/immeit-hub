@@ -3925,7 +3925,7 @@
       "date_de_rception_des_demandes": "#REF!",
       "date_de_traitement_immeit": "46045",
       "date_dernire_maj_immeit": "46045",
-      "conformit__la_premire_diffusion": "",
+      "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "Non concerné",
       "stockage": "Oui",
       "mise__jour_kpi": "Non concerné",
@@ -11331,7 +11331,7 @@
       "date_de_rception_des_demandes": "#REF!",
       "date_de_traitement_immeit": "46064",
       "date_dernire_maj_immeit": "46064",
-      "conformit__la_premire_diffusion": "",
+      "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "Non concerné",
       "stockage": "Oui",
       "mise__jour_kpi": "Non",
@@ -46153,7 +46153,7 @@
       "date_de_rception_des_demandes": "",
       "date_de_traitement_immeit": "46212",
       "date_dernire_maj_immeit": "46212",
-      "conformit__la_premire_diffusion": "",
+      "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "Non concerné",
       "stockage": "Oui",
       "mise__jour_kpi": "Non",
@@ -47027,7 +47027,7 @@
       "date_de_rception_des_demandes": "",
       "date_de_traitement_immeit": "46219",
       "date_dernire_maj_immeit": "46219",
-      "conformit__la_premire_diffusion": "",
+      "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
@@ -47380,9 +47380,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-16T15:09:25.002Z",
+  "syncedAt": "2026-07-16T15:10:26.399Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-16T15:09:17Z"
+  "lastModifiedDateTime": "2026-07-16T15:10:14Z"
 }
