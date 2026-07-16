@@ -46753,10 +46753,10 @@
       "date_dernire_maj_immeit": "46219",
       "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "Non concerné",
-      "stockage": "Non",
+      "stockage": "Oui",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• RAS. A noter une opération non réalisée (1NR) [Vérification fonctionnelle capteur détection niveau des puisards] avec le commentaire \"coupe le pool !!\" \nFaits Marquants: Contrôle, RAS\nCommentraire métier sur le NR: Les tests de fonctionnement sont à réaliser dans les conditions d'utilisation normale (ajout d'eau dans les puisards, contrôle niveau très haut de la pompe de récupération des drains avec un remplissage réel du bac,...) REG ISO 14001",
-      "etat_davance_de_la_demande": "Validée par P2M : A solder par IMMEIT",
+      "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "test des puisards realisé en campagne en aout , ok pour stockage",
       "conformit_de_la_demande": "Oui",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -46799,10 +46799,10 @@
       "date_dernire_maj_immeit": "46219",
       "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "Non concerné",
-      "stockage": "Non",
+      "stockage": "Oui",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• RAS. A noter une opération non réalisée (1NR) [Vérification fonctionnelle capteur détection niveau des puisards] avec le commentaire \"coupe le pool !!\" \nFaits Marquants: contrôle RAS\nCommentraire métier sur le NR: Les tests de fonctionnement sont a réaliser dans les conditions d'utilisation normale (ajout d'eau dans les puisards, contrôle niveau très haut de la pompe de récupération des drains avec un remplissage réel du bac,...) REG ISO 14001",
-      "etat_davance_de_la_demande": "Validée par P2M : A solder par IMMEIT",
+      "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "test des puisards realisé en campagne en aout , ok pour stockage",
       "conformit_de_la_demande": "Oui",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -47012,9 +47012,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-16T10:08:21.732Z",
+  "syncedAt": "2026-07-16T10:09:21.701Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
-  "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-16T10:07:50Z"
+  "lastModifiedBy": "IBRAHIMA KHALIL SECK (EXTERNAL)",
+  "lastModifiedDateTime": "2026-07-16T10:08:36Z"
 }
