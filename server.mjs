@@ -78,6 +78,11 @@ function loadEnv() {
   }
 }
 
+function getFrontDir() {
+  const distDir = path.join(__dirname, 'temp-react', 'dist');
+  return fs.existsSync(distDir) ? distDir : path.join(__dirname, 'public');
+}
+
 function serveStatic(res, filePath) {
   const ext = path.extname(filePath);
   if (ext === '.html' || ext === '.css' || ext === '.js') {
@@ -85,7 +90,8 @@ function serveStatic(res, filePath) {
   }
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      fs.readFile(path.join(__dirname, 'public', 'index.html'), (err2, data2) => {
+      const frontDir = getFrontDir();
+      fs.readFile(path.join(frontDir, 'index.html'), (err2, data2) => {
         if (err2) {
           res.writeHead(404, { 'Content-Type': 'text/plain' });
           res.end('404 Not Found');
@@ -244,9 +250,10 @@ server.on('request', async (req, res) => {
     return;
   }
 
+  const frontDir = getFrontDir();
   const safePath = pathname.replace(/\.\./g, '').replace(/[<>"|?*]/g, '');
-  const filePath = path.join(__dirname, 'public', safePath === '/' || !safePath ? 'index.html' : safePath);
-  if (!filePath.startsWith(path.join(__dirname, 'public'))) {
+  const filePath = path.join(frontDir, safePath === '/' || !safePath ? 'index.html' : safePath);
+  if (!filePath.startsWith(frontDir)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('Forbidden');
     return;
