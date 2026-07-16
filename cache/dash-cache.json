@@ -47211,12 +47211,12 @@
       "date_de_rception_des_demandes": "",
       "date_de_traitement_immeit": "46219",
       "date_dernire_maj_immeit": "46219",
-      "conformit__la_premire_diffusion": "",
+      "conformit__la_premire_diffusion": "Oui",
       "stockage_adveso": "",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Absence de la représentation graphique des valeurs mesurées sur l'ensemble des 18 CVs reçus\n• RAS pour le reste mais à noter qu'une opération reglèmentaire à été réalisée bien que non annoncée et sans OT\nPour stockage sur ADVESO: Vérification Conforme sur site par l'entreprise INDUSTRELEC le 09/06/2026 avec le technicien Brice MENEZ",
-      "etat_davance_de_la_demande": "En cours de traitement IMMEIT",
+      "remarque_immeit": "• RAS pour l'ensemble des 18CVs, mais à noter qu'une opération reglèmentaire à été réalisée bien que non annoncée et sans OT\n• Absence de la représentation graphique des valeurs mesurées sur l'ensemble des 18 CVs reçus\nPour stockage sur ADVESO: Vérification Conforme sur site par l'entreprise INDUSTRELEC le 09/06/2026 avec le technicien Brice MENEZ",
+      "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -47288,9 +47288,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-16T14:24:25.693Z",
+  "syncedAt": "2026-07-16T14:25:23.685Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "IBRAHIMA KHALIL SECK (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-16T14:23:44Z"
+  "lastModifiedDateTime": "2026-07-16T14:24:46Z"
 }
