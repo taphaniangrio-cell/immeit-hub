@@ -47261,8 +47261,8 @@
       "stockage_adveso": "",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Une opération REG 12 réalisée et jugée conforme au niveau CR partie PMP alors que non annoncée sur le titre ni sur le plan de prévention\n• RAS sur l'ensemble des CVs métrologieques et non métrologiques (\nPour stockage sur ADVESO: Vérification non conforme sur site par l'entreprise INDUSTRELEC le 10/06/2026 avec le technicien Brice MENEZ",
-      "etat_davance_de_la_demande": "En cours de traitement IMMEIT",
+      "remarque_immeit": "• Une opération REG 12 réalisée et jugée conforme au niveau CR partie PMP alors que non annoncée sur le titre ni sur le plan de prévention\n• RAS sur l'ensemble des CVs métrologieques et non métrologiques (CI2026-SCALF19-VM18-Ignition non conforme mais fiche de non conformité jointe)\nPour stockage sur ADVESO: Vérification non conforme sur site par l'entreprise INDUSTRELEC le 10/06/2026 avec le technicien Brice MENEZ",
+      "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -47307,7 +47307,7 @@
       "stockage_adveso": "Non concerné",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Absence de la fiche CERFA\n• Sept opérations non-réalisées (7NR) pour motif d'inéxistence",
+      "remarque_immeit": "• Absence de la fiche CERFA\n• Sept opérations non-réalisées (7NR) dont 5NR pour motif d'inéxistence et 2NR pour motif \"Pas de raccord de prise de pression\"",
       "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
@@ -47353,7 +47353,7 @@
       "stockage_adveso": "Non concerné",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Absence de la fiche CERFA\n• Sept opérations non-réalisées (7NR) pour motif d'inéxistence",
+      "remarque_immeit": "• Absence de la fiche CERFA\n• Sept opérations non-réalisées (7NR) dont 5NR pour motif d'inéxistence et 2NR pour motif \"Pas de raccord de prise de pression\"",
       "etat_davance_de_la_demande": "",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
@@ -47380,9 +47380,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-16T14:36:24.202Z",
+  "syncedAt": "2026-07-16T14:37:25.279Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
-  "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-16T14:34:56Z"
+  "lastModifiedBy": "IBRAHIMA KHALIL SECK (EXTERNAL)",
+  "lastModifiedDateTime": "2026-07-16T14:37:14Z"
 }
