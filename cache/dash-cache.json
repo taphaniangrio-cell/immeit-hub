@@ -46801,7 +46801,7 @@
       "stockage_adveso": "Non concerné",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• RAS. A noter une opération non réalisée (1NR) [Vérification fonctionnelle capteur détection niveau des puisards] avec le commentaire \"coupe le pool !!\" \nFaits Marquants: contrôle RAS\nCommentraire métier sur le NR: Les tests de fonctionnement sont a réaliser dans les\nconditions d'utilisation normale (ajout d'eau dans les\npuisards, contrôle niveau très haut de la pompe de\nrécupération des drains avec un remplissage réel du bac,\n...) REG ISO 14001",
+      "remarque_immeit": "• RAS. A noter une opération non réalisée (1NR) [Vérification fonctionnelle capteur détection niveau des puisards] avec le commentaire \"coupe le pool !!\" \nFaits Marquants: contrôle RAS\nCommentraire métier sur le NR: Les tests de fonctionnement sont a réaliser dans les conditions d'utilisation normale (ajout d'eau dans les puisards, contrôle niveau très haut de la pompe de récupération des drains avec un remplissage réel du bac,...) REG ISO 14001",
       "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
@@ -47012,9 +47012,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-16T09:16:21.908Z",
+  "syncedAt": "2026-07-16T09:17:21.253Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-16T09:15:18Z"
+  "lastModifiedDateTime": "2026-07-16T09:17:11Z"
 }
