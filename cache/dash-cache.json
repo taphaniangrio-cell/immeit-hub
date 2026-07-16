@@ -46706,11 +46706,11 @@
       "date_de_traitement_immeit": "46218",
       "date_dernire_maj_immeit": "46218",
       "conformit__la_premire_diffusion": "Oui",
-      "stockage_adveso": "",
+      "stockage_adveso": "Oui",
       "stockage": "Non concerné",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• Deux opérations non conformes:\n - [2026630-0765-GE-7392-FA As Found]\n   Results: Articulation performance of the AACMM with ODS   -  Fail (Nous vous informons par la présente que les AACMM énumérés ci-dessus présentent des résultats hors des spécifications du fabricant.)\n - [2026630-7392-FA As Found]\n   Results: Length measuring performance of the AACMM          -  Fail (Nous vous informons par la présente que les AACMM énumérées ci-dessus fonctionnent hors des spécifications du fabricant. Ce certificat d'étalonnage garantit le raccordement des résultats d'étalonnage au Système international\nd'unités (SI).)\nPour stockage sur ADVESO: Vérification non conforme effectuée hors site par l'entreprise HEXAGON le 30/06/2026 avec les techniciens BRIMBOEUF.D  & D.BUQUET",
-      "etat_davance_de_la_demande": "Validée par P2M : A solder par IMMEIT",
+      "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "2 operations non conforme AVANT AJUSTAGE , ensuite elles sont conforme , ok pour solde",
       "conformit_de_la_demande": "Oui",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -47012,9 +47012,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-16T10:04:22.018Z",
+  "syncedAt": "2026-07-16T10:05:21.398Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-16T10:02:35Z"
+  "lastModifiedDateTime": "2026-07-16T10:04:24Z"
 }
