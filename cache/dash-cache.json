@@ -47111,7 +47111,7 @@
       "type_de_demande": "Elaboration des plans de prévention",
       "nature_de_la_demande": "Gérico",
       "nbe_gerico_apex": "CP26_###3_173",
-      "nom_du_banc_nom_entreprise": "ENA Environnement",
+      "nom_du_banc_nom_entreprise": "ENA ENVIRONNEMENT",
       "priodicit": "-",
       "not": "-",
       "date_de_dpt_du_dossier_sur_docinfo": "",
@@ -47157,7 +47157,7 @@
       "type_de_demande": "Elaboration des plans de prévention",
       "nature_de_la_demande": "Gérico",
       "nbe_gerico_apex": "CP26_###3_17",
-      "nom_du_banc_nom_entreprise": "EKOLO",
+      "nom_du_banc_nom_entreprise": "EKOLLO SOLUTION SARL",
       "priodicit": "-",
       "not": "-",
       "date_de_dpt_du_dossier_sur_docinfo": "",
@@ -47196,9 +47196,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-16T13:26:25.288Z",
+  "syncedAt": "2026-07-16T13:27:23.285Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "IBRAHIMA KHALIL SECK (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-16T13:25:43Z"
+  "lastModifiedDateTime": "2026-07-16T13:26:36Z"
 }
