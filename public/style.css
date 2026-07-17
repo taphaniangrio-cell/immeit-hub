@@ -2096,12 +2096,6 @@ button:disabled {
 }
 
 /* ── Gauge Chart ── */
-.dash-gauge-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-2) 0;
-}
 
 /* ── Monthly Chart ── */
 
@@ -2265,8 +2259,9 @@ button:disabled {
 
 /* ── Insight Cards ── */
 .dash-insights {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-3);
 }
 .dash-insight {
@@ -2279,6 +2274,8 @@ button:disabled {
   border: 1px solid var(--clr-border);
   box-shadow: 0 1px 3px rgba(0,0,0,.04);
   animation: fadeInUp .3s ease both;
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 .dash-insight-icon {
   flex-shrink: 0;
@@ -2291,7 +2288,7 @@ button:disabled {
   background: var(--clr-bg-page);
   border-radius: var(--radius-md);
 }
-.dash-insight-text { font-size: var(--text-xs); color: var(--clr-text-secondary); line-height: 1.5; }
+.dash-insight-text { font-size: var(--text-xs); color: var(--clr-text-secondary); line-height: 1.5; flex: 1; min-width: 0; }
 .dash-insight-text strong { color: var(--clr-text-primary); }
 
 /* ── Filter Chips ── */

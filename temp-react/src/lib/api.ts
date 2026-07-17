@@ -7,7 +7,7 @@ function getCookie(name: string): string | null {
 
 export async function api<T = any>(path: string, options: RequestInit & { timeout?: number } = {}): Promise<T> {
   const { timeout = 20000, ...fetchOpts } = options;
-  const url = `${API_BASE}${path}?_=${Date.now()}`;
+  const url = `${API_BASE}${path}`;
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (fetchOpts.method && fetchOpts.method !== 'GET') {
@@ -55,8 +55,8 @@ export const authApi = {
 };
 
 export const dashboardApi = {
-  get: (signal?: AbortSignal) => api<any>('/dashboard', { timeout: 40000, signal }),
-  sync: () => api<any>('/sync', { method: 'POST', timeout: 60000 }),
+  get: (signal?: AbortSignal) => api<any>('/dashboard', { timeout: 60000, signal }),
+  sync: () => api<any>('/sync', { method: 'POST', timeout: 90000 }),
 };
 
 export const generateApi = {

@@ -30,7 +30,7 @@ export default function App() {
   return (
     <>
       <Shell title={view === 'articles' ? 'Articles' : undefined}>
-        {view === 'articles' ? <ArticlesPage /> : <DashboardPage />}
+        {view === 'articles' ? <ArticlesPage /> : <DashboardPage showToast={showToast} />}
       </Shell>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>

@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStore } from '../../stores/appStore';
 import { dashboardApi } from '../../lib/api';
-import { useToast } from '../../hooks/useToast';
 import { DashboardSkeleton } from '../ui/Skeleton';
 import { GaugeChart, BarChart, DonutChart, LineChart } from './Charts';
 
@@ -39,6 +38,16 @@ function excelToDate(val: string): Date | null {
     if (!isNaN(d.getTime()) && d.getFullYear() > 2000) return d;
   }
   return null;
+}
+
+function fmtDate(val: string): string {
+  if (!val) return '—';
+  const d = excelToDate(val);
+  if (!d) return '—';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 function parseNum(val: any): number {
@@ -212,44 +221,49 @@ const confColors: Record<string, string> = { 'Oui': '#16A34A', 'Non': '#DC2626',
 
 /* ── composant principal ── */
 
-export function DashboardPage() {
+export function DashboardPage({ showToast }: { showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void }) {
   const { dashboardData, setDashboardData } = useStore();
-  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [syncLoading, setSyncLoading] = useState(false);
+  const [refreshLoading, setRefreshLoading] = useState(false);
   const [updateInfo, setUpdateInfo] = useState('Chargement...');
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState(new Date().toISOString().slice(0, 10));
   const [defaultDateStart, setDefaultDateStart] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterSearch, setFilterSearch] = useState('');
+  const [filterNature, setFilterNature] = useState('');
+  const [filterSite, setFilterSite] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterDemandeur, setFilterDemandeur] = useState('');
+  const [filterBanc, setFilterBanc] = useState('');
 
-  const loadData = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    setError('');
-    try {
-      const data = await dashboardApi.get();
-      setDashboardData(data);
-      localStorage.setItem('immeit_dash_cache', JSON.stringify({ ...data, _cachedAt: Date.now() }));
-      setUpdateInfo('À l\'instant');
-    } catch (e: any) {
-      if (!silent) {
-        const cached = localStorage.getItem('immeit_dash_cache');
-        if (cached) {
-          try {
-            setDashboardData(JSON.parse(cached));
-            setUpdateInfo('Données en cache');
-          } catch {}
-        }
-        setError(e.message);
-      }
-    } finally {
-      setLoading(false);
+  // Load cache instantly on mount, then fetch fresh data in background
+  useEffect(() => {
+    const cached = localStorage.getItem('immeit_dash_cache');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setDashboardData(parsed);
+        setLoading(false);
+        setUpdateInfo('Données en cache');
+      } catch {}
     }
-  }, [setDashboardData]);
-
-  useEffect(() => { loadData(); }, []);
+    // Then fetch fresh data silently
+    (async () => {
+      try {
+        const data = await dashboardApi.get();
+        setDashboardData(data);
+        localStorage.setItem('immeit_dash_cache', JSON.stringify({ ...data, _cachedAt: Date.now() }));
+        setUpdateInfo('À l\'instant');
+      } catch (e: any) {
+        if (!dashboardData) setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   // Compute default dateStart (earliest deposit date) once data is loaded
   useEffect(() => {
@@ -272,14 +286,44 @@ export function DashboardPage() {
     }
   }, [dashboardData, dateStart]);
 
+  const refreshData = useCallback(async (silent = false) => {
+    setRefreshLoading(true);
+    // Instant feedback: show cached data immediately
+    const cached = localStorage.getItem('immeit_dash_cache');
+    if (cached) {
+      try { setDashboardData(JSON.parse(cached)); } catch {}
+    }
+    try {
+      const data = await dashboardApi.get();
+      setDashboardData(data);
+      localStorage.setItem('immeit_dash_cache', JSON.stringify({ ...data, _cachedAt: Date.now() }));
+      setUpdateInfo('À l\'instant');
+      if (!silent) showToast('Données actualisées', 'success');
+    } catch (e: any) {
+      if (!silent) showToast(e.message || 'Erreur lors de l\'actualisation', 'error');
+    } finally {
+      setRefreshLoading(false);
+    }
+  }, [setDashboardData, showToast]);
+
   const handleSync = async () => {
     setSyncLoading(true);
+    showToast('Synchronisation lancée…', 'info');
     try {
-      await dashboardApi.sync();
-      showToast('Synchronisation réussie', 'success');
-      setTimeout(() => loadData(), 1000);
+      const result = await dashboardApi.sync();
+      showToast(result.message || 'Synchronisation terminée', 'success');
+      // Refresh after a short delay to let background sync finish
+      setTimeout(async () => {
+        try {
+          const data = await dashboardApi.get();
+          setDashboardData(data);
+          localStorage.setItem('immeit_dash_cache', JSON.stringify({ ...data, _cachedAt: Date.now() }));
+          setUpdateInfo('À l\'instant');
+          showToast('Données mises à jour', 'success');
+        } catch {}
+      }, 5000);
     } catch (e: any) {
-      showToast(e.message, 'error');
+      showToast(e.message || 'Erreur de synchronisation', 'error');
     } finally {
       setSyncLoading(false);
     }
@@ -288,58 +332,164 @@ export function DashboardPage() {
   const synced = dashboardData?.synced;
   const headers = synced?.headers || dashboardData?.sharepoint?.headers || [];
   const items: Record<string, string>[] = synced?.items || dashboardData?.sharepoint?.items || [];
-  const allStats = items.length > 0 && headers.length > 0 ? computeStats(headers, items) : null;
 
-  const dateField = headers.length > 0 ? findHeader(headers, "Date de dépôt du dossier sur docinfo") : '';
-  const statusField = headers.length > 0 ? findHeader(headers, "Etat d'avance de la demande") : '';
-  const searchableFields = headers.map(h => norm(h)).filter(h => h);
+  const allStats = useMemo(() => items.length > 0 && headers.length > 0 ? computeStats(headers, items) : null, [headers, items]);
 
-  const filteredItems = items.filter(item => {
-    if (filterStatus) {
-      const val = (item[statusField] || '').trim();
-      if (norm(val) !== norm(filterStatus)) return false;
+  const dateField = useMemo(() => headers.length > 0 ? findHeader(headers, "Date de dépôt du dossier sur docinfo") : '', [headers]);
+  const statusField = useMemo(() => headers.length > 0 ? findHeader(headers, "Etat d'avance de la demande") : '', [headers]);
+  const natureField = useMemo(() => headers.length > 0 ? findHeader(headers, 'Nature de la demande') : '', [headers]);
+  const typeField = useMemo(() => headers.length > 0 ? findHeader(headers, 'Type de demande') : '', [headers]);
+  const siteField = useMemo(() => headers.length > 0 ? findHeader(headers, 'Site') : '', [headers]);
+  const demandeurField = useMemo(() => headers.length > 0 ? findHeader(headers, 'Demandeurs') : '', [headers]);
+  const bancField = useMemo(() => headers.length > 0 ? findHeader(headers, 'N°(BE / GERICO / APEX)') : '', [headers]);
+  const searchableFields = useMemo(() => headers.map(h => norm(h)).filter(h => h), [headers]);
+
+  const tableHeaders = useMemo(() => ({
+    date: headers.length > 0 ? findHeader(headers, 'Date de dépôt du dossier sur docinfo') : '',
+    site: headers.length > 0 ? findHeader(headers, 'Site') : '',
+    demandeur: headers.length > 0 ? findHeader(headers, 'Demandeurs') : '',
+    avancement: headers.length > 0 ? findHeader(headers, "Etat d'avance de la demande") : '',
+    nature: headers.length > 0 ? findHeader(headers, 'Nature de la demande') : '',
+    banc: headers.length > 0 ? findHeader(headers, 'N°(BE / GERICO / APEX)') : '',
+  }), [headers]);
+
+  const dateStartMs = useMemo(() => dateStart ? new Date(dateStart).getTime() : 0, [dateStart]);
+  const dateEndMs = useMemo(() => dateEnd ? new Date(dateEnd).getTime() + 86400000 : Infinity, [dateEnd]);
+  const normFilterStatus = useMemo(() => filterStatus ? norm(filterStatus) : '', [filterStatus]);
+  const normSearch = useMemo(() => filterSearch ? norm(filterSearch) : '', [filterSearch]);
+  const normNature = useMemo(() => filterNature ? norm(filterNature) : '', [filterNature]);
+  const normType = useMemo(() => filterType ? norm(filterType) : '', [filterType]);
+  const normSite = useMemo(() => filterSite ? norm(filterSite) : '', [filterSite]);
+  const normDemandeur = useMemo(() => filterDemandeur ? norm(filterDemandeur) : '', [filterDemandeur]);
+  const normBanc = useMemo(() => filterBanc ? norm(filterBanc) : '', [filterBanc]);
+
+  // Items filtrés par date + recherche + dimensions (sauf statut) — pour comptes dynamiques du dropdown
+  const dateFilteredItems = useMemo(() => {
+    let result = items;
+    if (dateField) {
+      result = result.filter(item => {
+        const d = excelToDate(item[dateField]);
+        if (!d) return true;
+        const t = d.getTime();
+        return t >= dateStartMs && t <= dateEndMs;
+      });
     }
-    if (filterSearch) {
-      const q = norm(filterSearch);
-      const match = searchableFields.some(f => norm(item[f] || '').includes(q));
+    if (normSearch) {
+      result = result.filter(item =>
+        searchableFields.some(f => norm(item[f] || '').includes(normSearch))
+      );
+    }
+    if (normNature && natureField) {
+      result = result.filter(item => norm(item[natureField] || '') === normNature);
+    }
+    if (normType && typeField) {
+      result = result.filter(item => norm(item[typeField] || '') === normType);
+    }
+    if (normSite && siteField) {
+      result = result.filter(item => norm(item[siteField] || '') === normSite);
+    }
+    if (normDemandeur && demandeurField) {
+      result = result.filter(item => norm(item[demandeurField] || '') === normDemandeur);
+    }
+    if (normBanc && bancField) {
+      result = result.filter(item => norm(item[bancField] || '') === normBanc);
+    }
+    return result;
+  }, [items, dateField, dateStartMs, dateEndMs, normSearch, searchableFields, natureField, typeField, siteField, demandeurField, bancField, normNature, normType, normSite, normDemandeur, normBanc]);
+
+  const dateFilteredStats = useMemo(() =>
+    dateFilteredItems.length > 0 && headers.length > 0 ? computeStats(headers, dateFilteredItems) : null,
+  [headers, dateFilteredItems]);
+
+  const filteredItems = useMemo(() => items.filter(item => {
+    if (normFilterStatus) {
+      const val = (item[statusField] || '').trim();
+      if (norm(val) !== normFilterStatus) return false;
+    }
+    if (normNature && natureField) {
+      if (norm(item[natureField] || '') !== normNature) return false;
+    }
+    if (normType && typeField) {
+      if (norm(item[typeField] || '') !== normType) return false;
+    }
+    if (normSite && siteField) {
+      if (norm(item[siteField] || '') !== normSite) return false;
+    }
+    if (normDemandeur && demandeurField) {
+      if (norm(item[demandeurField] || '') !== normDemandeur) return false;
+    }
+    if (normBanc && bancField) {
+      if (norm(item[bancField] || '') !== normBanc) return false;
+    }
+    if (normSearch) {
+      const match = searchableFields.some(f => norm(item[f] || '').includes(normSearch));
       if (!match) return false;
     }
-    if (dateStart) {
+    if (dateField) {
       const d = excelToDate(item[dateField]);
-      if (d && d.getTime() < new Date(dateStart).getTime()) return false;
-    }
-    if (dateEnd) {
-      const d = excelToDate(item[dateField]);
-      if (d && d.getTime() > new Date(dateEnd).getTime() + 86400000) return false;
+      if (d) {
+        const t = d.getTime();
+        if (t < dateStartMs || t > dateEndMs) return false;
+      }
     }
     return true;
-  });
+  }), [items, statusField, natureField, typeField, siteField, demandeurField, bancField, searchableFields, dateField, normFilterStatus, normNature, normType, normSite, normDemandeur, normBanc, normSearch, dateStartMs, dateEndMs]);
 
-  const isFiltered = filterStatus !== '' || filterSearch !== '' || (dateStart !== '' && dateStart !== defaultDateStart);
-  const stats = filteredItems.length > 0 && headers.length > 0 ? computeStats(headers, filteredItems) : null;
+  const isFiltered = filterStatus !== '' || filterSearch !== '' || filterNature !== '' || filterType !== '' || filterSite !== '' || filterDemandeur !== '' || filterBanc !== '' || (dateStart !== '' && dateStart !== defaultDateStart);
+  const stats = useMemo(() => filteredItems.length > 0 && headers.length > 0 ? computeStats(headers, filteredItems) : null, [headers, filteredItems]);
   const total = stats?.total || 0;
 
   const resetFilters = () => {
     setFilterStatus('');
     setFilterSearch('');
+    setFilterNature('');
+    setFilterType('');
+    setFilterSite('');
+    setFilterDemandeur('');
+    setFilterBanc('');
     setDateStart(defaultDateStart);
     setDateEnd(new Date().toISOString().slice(0, 10));
   };
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-800">Rapports reçus pour vérification</h1>
-          <p className="text-xs text-gray-400 mt-1">{updateInfo}</p>
+          <h1 className="text-xl font-bold text-gray-800">Tableau de bord IMMEIT</h1>
+          <p className="text-xs text-gray-400 mt-0.5">{updateInfo}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <input type="date" value={dateStart} onChange={e => setDateStart(e.target.value)} className="px-2 py-1 border border-gray-200 rounded text-xs" title="Date début" />
-          <input type="date" value={dateEnd} onChange={e => setDateEnd(e.target.value || new Date().toISOString().slice(0, 10))} className="px-2 py-1 border border-gray-200 rounded text-xs" title="Date fin" />
-          <button onClick={() => loadData()} className="px-3 py-1.5 bg-gray-100 rounded-lg text-xs hover:bg-gray-200" title="Rafraîchir">↻</button>
-          <button onClick={handleSync} disabled={syncLoading} className={`px-3 py-1.5 bg-[#0A66C2] text-white rounded-lg text-xs hover:bg-[#084a8f] ${syncLoading ? 'opacity-50 animate-pulse' : ''}`} title="Synchroniser">⇄</button>
-          <button onClick={resetFilters} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${isFiltered ? 'bg-[#DC2626] text-white hover:bg-[#B91C1C]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Filtres</button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => refreshData()}
+            disabled={refreshLoading || syncLoading}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-all shadow-sm active:scale-95 ${refreshLoading ? 'bg-blue-50 border-blue-200 text-blue-600 cursor-wait' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'}`}
+          >
+            <svg className={refreshLoading ? 'animate-spin' : ''} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            {refreshLoading ? 'Actualisation…' : 'Actualiser'}
+          </button>
+          <button
+            onClick={handleSync}
+            disabled={syncLoading}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all shadow-sm active:scale-95 ${syncLoading ? 'bg-blue-400 cursor-wait animate-pulse' : 'bg-[#0A66C2] hover:bg-[#084a8f] hover:shadow-md'}`}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            {syncLoading ? 'Sync…' : 'Sync'}
+          </button>
         </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 mb-4 text-xs">
+        <input type="date" value={dateStart} onChange={e => setDateStart(e.target.value)} className="px-2 py-1.5 border border-gray-200 rounded text-xs" title="Date début" />
+        <input type="date" value={dateEnd} onChange={e => setDateEnd(e.target.value || new Date().toISOString().slice(0, 10))} className="px-2 py-1.5 border border-gray-200 rounded text-xs" title="Date fin" />
+        {dateFilteredStats ? (
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-2 py-1.5 border border-gray-200 rounded text-xs">
+          <option value="">Tous les statuts</option>
+          {dateFilteredStats.avancementDist.map(d => (
+            <option key={d.label} value={d.label}>{d.label} ({d.count})</option>
+          ))}
+        </select>
+        ) : null}
+        <input type="text" value={filterSearch} onChange={e => setFilterSearch(e.target.value)} placeholder="Mot-clé…" className="px-2 py-1.5 border border-gray-200 rounded text-xs min-w-[180px]" />
+        <button onClick={resetFilters} className={`ml-auto px-3 py-1.5 rounded-lg text-xs transition-colors ${isFiltered ? 'bg-[#DC2626] text-white hover:bg-[#B91C1C]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Filtres</button>
       </div>
 
       {/* Filtres chips */}
@@ -349,6 +499,36 @@ export function DashboardPage() {
             <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
               {filterStatus}
               <button onClick={() => setFilterStatus('')} className="ml-0.5 hover:text-blue-900 font-bold">×</button>
+            </span>
+          ) : null}
+          {filterNature ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">
+              {filterNature}
+              <button onClick={() => setFilterNature('')} className="ml-0.5 hover:text-purple-900 font-bold">×</button>
+            </span>
+          ) : null}
+          {filterType ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
+              {filterType}
+              <button onClick={() => setFilterType('')} className="ml-0.5 hover:text-amber-900 font-bold">×</button>
+            </span>
+          ) : null}
+          {filterSite ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+              {filterSite}
+              <button onClick={() => setFilterSite('')} className="ml-0.5 hover:text-green-900 font-bold">×</button>
+            </span>
+          ) : null}
+          {filterDemandeur ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 rounded-full text-xs font-medium">
+              {filterDemandeur}
+              <button onClick={() => setFilterDemandeur('')} className="ml-0.5 hover:text-rose-900 font-bold">×</button>
+            </span>
+          ) : null}
+          {filterBanc ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-full text-xs font-medium">
+              {filterBanc}
+              <button onClick={() => setFilterBanc('')} className="ml-0.5 hover:text-cyan-900 font-bold">×</button>
             </span>
           ) : null}
           {(dateStart && dateStart !== defaultDateStart) ? (
@@ -363,7 +543,7 @@ export function DashboardPage() {
       {loading ? <DashboardSkeleton /> : error && !dashboardData ? (
         <div className="text-center py-12">
           <p className="text-red-500 text-sm mb-3">{error}</p>
-          <button onClick={() => loadData()} className="px-4 py-2 bg-[#0A66C2] text-white rounded-lg text-sm">Réessayer</button>
+          <button onClick={() => refreshData()} className="px-4 py-2 bg-[#0A66C2] text-white rounded-lg text-sm">Réessayer</button>
         </div>
       ) : !allStats ? (
         <div className="text-center py-12 text-gray-400">
@@ -377,19 +557,6 @@ export function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* Barre de filtres */}
-          <div className="flex flex-wrap items-center gap-3 mb-4 text-xs">
-            <span className="text-gray-500 font-medium">Statut</span>
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-2 py-1.5 border border-gray-200 rounded text-xs">
-              <option value="">Tous les statuts</option>
-              {allStats.avancementDist.map(d => (
-                <option key={d.label} value={d.label}>{d.label} ({d.count})</option>
-              ))}
-            </select>
-            <span className="text-gray-500 font-medium ml-1">Recherche</span>
-            <input type="text" value={filterSearch} onChange={e => setFilterSearch(e.target.value)} placeholder="Mot-clé…" className="px-2 py-1.5 border border-gray-200 rounded text-xs min-w-[180px]" />
-          </div>
-
           {/* Health Score — intégré dans Insights ci-dessus */}
 
           {/* KPI Cards */}
@@ -442,28 +609,14 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Sections : Conformité */}
-          {stats.conf1Dist.length > 0 || stats.confDemDist.length > 0 ? (
-            <CollapsibleSection title="Conformité">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {stats.conf1Dist.length > 0 && (
-                  <GaugeChartLabeled title="Conformité 1ère diffusion" data={stats.conf1Dist} colorMap={confColors} />
-                )}
-                {stats.confDemDist.length > 0 && (
-                  <GaugeChartLabeled title="Conformité demande" data={stats.confDemDist} colorMap={confColors} />
-                )}
-              </div>
-            </CollapsibleSection>
-          ) : null}
-
           {/* Avancement & Type */}
           {stats.avancementDist.length > 0 && stats.typeDist.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <CollapsibleSection title="État d'avancement">
-                <BarChart data={stats.avancementDist} colorMap={statusColors} />
+                <BarChart data={stats.avancementDist} colorMap={statusColors} onFilterClick={label => setFilterStatus(label === filterStatus ? '' : label)} />
               </CollapsibleSection>
               <CollapsibleSection title="Type de demande">
-                <DonutChart data={stats.typeDist.slice(0, 8)} colorMap={typeColors} />
+                <DonutChart data={stats.typeDist.slice(0, 8)} colorMap={typeColors} onFilterClick={label => setFilterType(label === filterType ? '' : label)} />
               </CollapsibleSection>
             </div>
           ) : null}
@@ -473,12 +626,12 @@ export function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {stats.natureDist.length > 0 && (
                 <CollapsibleSection title="Nature">
-                  <BarChart data={stats.natureDist.slice(0, 8)} colorMap={natureColors} />
+                  <BarChart data={stats.natureDist.slice(0, 8)} colorMap={natureColors} onFilterClick={label => setFilterNature(label === filterNature ? '' : label)} />
                 </CollapsibleSection>
               )}
               {stats.siteDist.length > 0 && (
                 <CollapsibleSection title="Par site">
-                  <DonutChart data={stats.siteDist.slice(0, 8)} colorMap={siteColors} />
+                  <DonutChart data={stats.siteDist.slice(0, 8)} colorMap={siteColors} onFilterClick={label => setFilterSite(label === filterSite ? '' : label)} />
                 </CollapsibleSection>
               )}
             </div>
@@ -499,7 +652,7 @@ export function DashboardPage() {
           {/* Top demandeurs */}
           {stats.topDemandeurs.length > 0 ? (
             <CollapsibleSection title="Top 10 demandeurs" className="mb-6">
-              <BarChart data={stats.topDemandeurs} />
+              <BarChart data={stats.topDemandeurs} onFilterClick={label => setFilterDemandeur(label === filterDemandeur ? '' : label)} />
             </CollapsibleSection>
           ) : null}
 
@@ -511,49 +664,106 @@ export function DashboardPage() {
           ) : null}
 
           {/* Data Table */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
               <h3 className="text-sm font-semibold text-gray-700">Données détaillées</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-gray-50 text-gray-500 uppercase">
-                    <th className="text-left p-3 font-medium">#</th>
-                    <th className="text-left p-3 font-medium">Dépôt</th>
-                    <th className="text-left p-3 font-medium max-md:hidden">Site</th>
-                    <th className="text-left p-3 font-medium max-md:hidden">Demandeur</th>
-                    <th className="text-left p-3 font-medium">Avancement</th>
-                    <th className="text-left p-3 font-medium max-md:hidden">Type</th>
+                  <tr className="bg-gray-50 text-gray-500 uppercase tracking-wider text-[10px]">
+                    <th className="text-left p-3 font-semibold">#</th>
+                    <th className="text-left p-3 font-semibold">Dépôt</th>
+                    <th className="text-left p-3 font-semibold max-md:hidden">Site</th>
+                    <th className="text-left p-3 font-semibold max-md:hidden">Demandeur</th>
+                    <th className="text-left p-3 font-semibold">N°</th>
+                    <th className="text-left p-3 font-semibold">Nature</th>
+                    <th className="text-left p-3 font-semibold">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items.slice(0, 50).map((item: any, i: number) => {
-                    const avancement = item[findHeader(headers, "Etat d'avance de la demande")] || 'N/A';
+                  {filteredItems.slice(0, 50).map((item: any, i: number) => {
+                    const avancement = item[tableHeaders.avancement] || 'N/A';
+                    const nature = item[tableHeaders.nature] || '';
+                    const site = item[tableHeaders.site] || '';
+                    const demandeur = item[tableHeaders.demandeur] || '';
+
+                    function getColor(map: Record<string, string>, label: string): string {
+                      const n = label.trim().toLowerCase();
+                      for (const [k, v] of Object.entries(map)) {
+                        if (k.trim().toLowerCase() === n) return v;
+                      }
+                      return '#6B7280';
+                    }
+
                     return (
-                      <tr key={i} className="border-t border-gray-50 hover:bg-gray-50">
-                        <td className="p-3 text-gray-400">{i + 1}</td>
-                        <td className="p-3 font-medium text-gray-700">{item[findHeader(headers, 'Date de dépôt du dossier sur docinfo')] || '—'}</td>
-                        <td className="p-3 text-gray-500 max-md:hidden">{item[findHeader(headers, 'Site')] || '—'}</td>
-                        <td className="p-3 text-gray-500 max-md:hidden">{item[findHeader(headers, 'Demandeurs')] || '—'}</td>
-                        <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                            /termine/i.test(avancement) ? 'bg-green-100 text-green-700' :
-                            /en.cours/i.test(avancement) ? 'bg-yellow-100 text-yellow-700' :
-                            /nouvelle?/i.test(avancement) ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                      <tr key={i} className={`border-t border-gray-50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} hover:bg-blue-50/40`}>
+                        <td className="p-3 text-gray-400 font-mono text-[11px]">{item._row || i + 1}</td>
+                        <td className="p-3 font-medium text-gray-700 text-[11px]">{fmtDate(item[tableHeaders.date])}</td>
+                        <td className={`max-md:hidden`}>
+                          {site ? (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-all hover:ring-2 hover:ring-offset-1 ${
+                              ['carrières','carriere'].some(s => site.toLowerCase().includes(s)) ? 'bg-orange-50 text-orange-700 hover:ring-orange-200' :
+                              ['issy'].some(s => site.toLowerCase().includes(s)) ? 'bg-cyan-50 text-cyan-700 hover:ring-cyan-200' :
+                              ['paris'].some(s => site.toLowerCase().includes(s)) ? 'bg-blue-50 text-blue-700 hover:ring-blue-200' :
+                              ['lyon'].some(s => site.toLowerCase().includes(s)) ? 'bg-rose-50 text-rose-700 hover:ring-rose-200' :
+                              'bg-gray-100 text-gray-600 hover:ring-gray-200'
+                            }`}
+                              onClick={() => setFilterSite(site === filterSite ? '' : site)}>{site}</span>
+                          ) : <span className="p-3 text-gray-300">—</span>}
+                        </td>
+                        <td className={`max-md:hidden`}>
+                          {demandeur ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-gray-600 bg-gray-100/80 cursor-pointer hover:bg-rose-100 hover:text-rose-700 transition-all"
+                              onClick={() => setFilterDemandeur(demandeur === filterDemandeur ? '' : demandeur)}>{demandeur}</span>
+                          ) : <span className="p-3 text-gray-300">—</span>}
+                        </td>
+                        <td className={`p-3`}>
+                          {item[tableHeaders.banc] ? (
+                            <span className="font-mono text-gray-500 text-[11px] cursor-pointer hover:text-cyan-700 transition-colors"
+                              onClick={() => setFilterBanc(item[tableHeaders.banc] === filterBanc ? '' : item[tableHeaders.banc])}>{item[tableHeaders.banc]}</span>
+                          ) : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className={`p-3`}>
+                          {nature ? (
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-all hover:ring-2 hover:ring-offset-1`}
+                              style={{ backgroundColor: getColor(natureColors, nature) + '18', color: getColor(natureColors, nature) }}
+                              onClick={() => setFilterNature(nature === filterNature ? '' : nature)}>
+                              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: getColor(natureColors, nature) }}></span>
+                              {nature}
+                            </span>
+                          ) : <span className="p-3 text-gray-300">—</span>}
+                        </td>
+                        <td className={`p-3 cursor-pointer`} onClick={() => setFilterStatus(avancement === filterStatus ? '' : avancement)}>
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-all hover:ring-2 hover:ring-offset-1 ${
+                            /termine|sold|clotur/i.test(avancement) ? 'bg-emerald-50 text-emerald-700 hover:ring-emerald-200' :
+                            /en.cours|instruction/i.test(avancement) ? 'bg-amber-50 text-amber-700 hover:ring-amber-200' :
+                            /nouvelle?|a.traiter|reouverte/i.test(avancement) ? 'bg-blue-50 text-blue-700 hover:ring-blue-200' :
+                            /attente|suspend/i.test(avancement) ? 'bg-slate-100 text-slate-600 hover:ring-slate-200' :
+                            /annul/i.test(avancement) ? 'bg-red-50 text-red-600 hover:ring-red-200' :
+                            /valide/i.test(avancement) ? 'bg-teal-50 text-teal-700 hover:ring-teal-200' :
+                            'bg-gray-100 text-gray-600 hover:ring-gray-200'
                           }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full inline-block ${
+                              /termine|sold|clotur/i.test(avancement) ? 'bg-emerald-500' :
+                              /en.cours|instruction/i.test(avancement) ? 'bg-amber-500' :
+                              /nouvelle?|a.traiter|reouverte/i.test(avancement) ? 'bg-blue-500' :
+                              /attente|suspend/i.test(avancement) ? 'bg-slate-400' :
+                              /annul/i.test(avancement) ? 'bg-red-500' :
+                              /valide/i.test(avancement) ? 'bg-teal-500' :
+                              'bg-gray-400'
+                            }`}></span>
                             {avancement}
                           </span>
                         </td>
-                        <td className="p-3 text-gray-500 max-md:hidden">{item[findHeader(headers, 'Type de demande')] || '—'}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-              {items.length > 50 && (
+              {filteredItems.length > 50 && (
                 <div className="p-3 text-center text-xs text-gray-400 border-t border-gray-100">
-                  Affichage de 50 lignes sur {items.length}
+                  Affichage de 50 lignes sur {filteredItems.length}
                 </div>
               )}
             </div>

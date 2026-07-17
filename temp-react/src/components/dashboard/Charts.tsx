@@ -11,7 +11,7 @@ export function GaugeChart({ value, max = 100, label, color = '#0A66C2' }: { val
 
   return (
     <div className="flex flex-col items-center">
-      <svg width="130" height="80" viewBox="0 0 130 85" className="overflow-visible">
+      <svg width="130" height="120" viewBox="0 0 130 120">
         <path d="M 15 65 A 44 44 0 0 1 115 65" fill="none" stroke="#e5e7eb" strokeWidth="16" strokeLinecap="round" />
         {pct > 0 && (
           <path d="M 15 65 A 44 44 0 0 1 115 65" fill="none" stroke={color} strokeWidth="16" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} />
@@ -23,12 +23,12 @@ export function GaugeChart({ value, max = 100, label, color = '#0A66C2' }: { val
   );
 }
 
-export function BarChart({ data, colorMap }: { data: { label: string; count: number }[]; colorMap?: Record<string, string> }) {
+export function BarChart({ data, colorMap, onFilterClick }: { data: { label: string; count: number }[]; colorMap?: Record<string, string>; onFilterClick?: (label: string) => void }) {
   const maxCount = Math.max(...data.map(d => d.count), 1);
   return (
     <div className="space-y-1.5">
       {data.map(d => (
-        <div key={d.label} className="flex items-center gap-2">
+        <div key={d.label} className={`flex items-center gap-2 ${onFilterClick ? 'cursor-pointer hover:opacity-80' : ''}`} onClick={() => onFilterClick?.(d.label)}>
           <span className="text-xs text-gray-600 w-32 truncate shrink-0">{d.label}</span>
           <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(d.count / maxCount) * 100}%`, backgroundColor: colorMap?.[d.label] || '#0A66C2' }} />
@@ -40,7 +40,7 @@ export function BarChart({ data, colorMap }: { data: { label: string; count: num
   );
 }
 
-export function DonutChart({ data, colorMap }: { data: { label: string; count: number }[]; colorMap?: Record<string, string> | string[] }) {
+export function DonutChart({ data, colorMap, onFilterClick }: { data: { label: string; count: number }[]; colorMap?: Record<string, string> | string[]; onFilterClick?: (label: string) => void }) {
   const total = data.reduce((s, d) => s + d.count, 0) || 1;
   let acc = 0;
   const slices = data.map(d => {
@@ -73,7 +73,7 @@ export function DonutChart({ data, colorMap }: { data: { label: string; count: n
       </svg>
       <div className="w-full mt-1 space-y-1">
         {data.map((d, i) => (
-          <div key={d.label} className="flex items-center gap-1.5 text-[10px] text-gray-500">
+          <div key={d.label} className={`flex items-center gap-1.5 text-[10px] text-gray-500 ${onFilterClick ? 'cursor-pointer hover:opacity-80' : ''}`} onClick={() => onFilterClick?.(d.label)}>
             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getColor(colorMap, d.label, i) }} />
             <span className="truncate flex-1">{d.label}</span>
             <span className="font-medium">{Math.round((d.count / total) * 100)}%</span>

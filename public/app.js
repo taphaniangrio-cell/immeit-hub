@@ -1767,7 +1767,11 @@ function renderDashboard(data) {
 
       if (!insightText && stats.monthlyTrend.length >= 3) {
         var _total = 0; for (var _ti = 0; _ti < stats.monthlyTrend.length; _ti++) _total += stats.monthlyTrend[_ti].count
-        insightText = '<strong>' + _total + '</strong> demande' + (_total > 1 ? 's' : '') + ' sur ' + _monthLabel(first.month) + '\u2013' + _monthLabel(last.month) + ' \u2014 tendance ' + (last.count > first.count ? 'haussi\u00e8re' : last.count < first.count ? 'baissi\u00e8re' : 'stable') + ' (' + first.count + ' \u2192 ' + last.count + ')'
+        var _avg = Math.round(_total / stats.monthlyTrend.length)
+        var _pctTrend = first.count > 0 ? Math.round(((last.count - first.count) / first.count) * 100) : 0
+        var _trendLabel = _pctTrend > 0 ? 'en hausse de ' + _pctTrend + '%' : _pctTrend < 0 ? 'en baisse de ' + Math.abs(_pctTrend) + '%' : 'stable'
+        var _arrowTrend = _pctTrend > 0 ? '\u2197' : _pctTrend < 0 ? '\u2198' : '\u2192'
+        insightText = '<strong>' + _total + '</strong> demande' + (_total > 1 ? 's' : '') + ' sur ' + _monthLabel(first.month) + '\u2013' + _monthLabel(last.month) + ' \u2014 ' + _arrowTrend + ' ' + _trendLabel + ' vs ' + _monthLabel(first.month) + ' · moy. ' + _avg + '/mois'
       }
 
       if (!insightText && stats.monthlyTrend.length >= 2) {
@@ -1788,26 +1792,6 @@ function renderDashboard(data) {
       statsArea.appendChild(insWrap)
     }
 
-    // ─── SECTION : CONFORMITÉ ─────────────────────────────────
-    if (stats.conf1Dist.length > 0 || stats.confDemDist.length > 0) {
-      const confGrid = document.createElement('div')
-      confGrid.className = 'dash-charts-grid'
-      if (stats.conf1Dist.length > 0) confGrid.appendChild(createGaugeChart('Conformité 1ère diffusion', stats.conf1Dist, confColors))
-      if (stats.confDemDist.length > 0) confGrid.appendChild(createGaugeChart('Conformité demande', stats.confDemDist, confColors))
-      if (confGrid.children.length > 0) {
-        const section = document.createElement('div')
-        section.className = 'dash-section'
-        section.innerHTML = `<div class="dash-section-header"><h3>Conformité</h3><span class="dash-section-toggle open" id="dash-toggle-conf">▼</span></div><div class="dash-section-body" id="dash-body-conf"></div>`
-        section.querySelector('.dash-section-body').appendChild(confGrid)
-        section.querySelector('.dash-section-header').addEventListener('click', () => {
-          const body = section.querySelector('.dash-section-body')
-          const toggle = section.querySelector('.dash-section-toggle')
-          body.classList.toggle('collapsed')
-          toggle.classList.toggle('open')
-        })
-        statsArea.appendChild(section)
-      }
-    }
 
     // ─── SECTION : STOCKAGE ────────────────────────────────────
     if (stats.stockageDist && stats.stockageDist.length > 0 && stats.stockageAdvesoDist && stats.stockageAdvesoDist.length > 0) {
@@ -1956,11 +1940,25 @@ function renderDashboard(data) {
   var endInput = document.getElementById('dash-date-end')
   if (startInput) {
     startInput.value = dateStartVal
-    startInput.onchange = function() { dateStartVal = this.value; _dashUserFiltered = true; applyGlobalFilters() }
+    startInput._prevVal = startInput.value
+    startInput.onchange = function() {
+      if (this.value === this._prevVal) return
+      this._prevVal = this.value
+      dateStartVal = this.value
+      _dashUserFiltered = true
+      applyGlobalFilters()
+    }
   }
   if (endInput) {
     endInput.value = dateEndVal
-    endInput.onchange = function() { dateEndVal = this.value; _dashUserFiltered = true; applyGlobalFilters() }
+    endInput._prevVal = endInput.value
+    endInput.onchange = function() {
+      if (this.value === this._prevVal) return
+      this._prevVal = this.value
+      dateEndVal = this.value
+      _dashUserFiltered = true
+      applyGlobalFilters()
+    }
   }
   var resetBtn = document.getElementById('btn-dash-reset')
   function _dashUpdateResetBtn() {
@@ -1976,8 +1974,8 @@ function renderDashboard(data) {
       if (resetBtn.classList.contains('syncing') || resetBtn.disabled) return
       resetBtn.classList.add('syncing')
       _dashUserFiltered = false
-      if (startInput) { startInput.value = minDateStr || (new Date().getFullYear() + '-01-01'); dateStartVal = startInput.value }
-      if (endInput) { endInput.value = todayStr; dateEndVal = endInput.value }
+      if (startInput) { startInput.value = minDateStr || (new Date().getFullYear() + '-01-01'); startInput._prevVal = startInput.value; dateStartVal = startInput.value }
+      if (endInput) { endInput.value = todayStr; endInput._prevVal = endInput.value; dateEndVal = endInput.value }
       if (searchInput) searchInput.value = ''
       if (statusSel) statusSel.value = ''
       window._dashFieldFilters = {}
@@ -2316,8 +2314,6 @@ const natureColors = {
 const siteColors = ['#DC2626', '#0D9488', '#16A34A', '#F59E0B', '#7C3AED', '#EA580C', '#65A30D', '#EC4899', '#D97706', '#BE123C']
 
 const typeColors = ['#2563EB', '#DC2626', '#16A34A', '#F59E0B', '#9333EA', '#0D9488', '#EC4899', '#D97706', '#0891B2', '#6366F1']
-
-const confColors = { 'Oui': '#16A34A', 'Non': '#DC2626', 'Conforme': '#16A34A', 'Non conforme': '#DC2626' }
 const stockageColors = { 'Oui': '#16A34A', 'Non': '#DC2626', 'Non concerné': '#94A3B8', 'Non concerne': '#94A3B8' }
 
 function createBarChart(title, data, colorMap) {
@@ -2351,83 +2347,6 @@ function createBarChart(title, data, colorMap) {
   return card
 }
 
-function createGaugeChart(title, data, colorMap) {
-  var card = document.createElement('div')
-  card.className = 'dash-chart-card'
-  card.innerHTML = '<h4>' + title + '</h4>'
-  if (!data || data.length === 0) {
-    card.innerHTML += '<div style="color:var(--clr-text-muted);font-size:var(--text-sm);padding:20px 0;text-align:center">Aucune donn\u00e9e</div>'
-    return card
-  }
-  var total = data.reduce(function(s, d) { return s + d.count }, 0)
-  if (total === 0) {
-    card.innerHTML += '<div style="color:var(--clr-text-muted);font-size:var(--text-sm);padding:20px 0;text-align:center">Aucune donn\u00e9e</div>'
-    return card
-  }
-  var yesEntry = data.find(function(d) { return /oui|conforme/i.test(d.label) })
-  var pct = yesEntry ? Math.round(yesEntry.count / total * 100) : 0
-  var gaugeColor = pct >= 80 ? '#10B981' : pct >= 60 ? '#F59E0B' : '#EF4444'
-
-  var wrap = document.createElement('div')
-  wrap.className = 'dash-gauge-wrap'
-
-  var svgNS = 'http://www.w3.org/2000/svg'
-  var svg = document.createElementNS(svgNS, 'svg')
-  svg.setAttribute('width', '130')
-  svg.setAttribute('height', '80')
-  svg.setAttribute('viewBox', '0 0 130 85')
-  svg.style.flexShrink = '0'
-
-  var cx = 65, cy = 65, r = 44
-
-  var bg = document.createElementNS(svgNS, 'path')
-  bg.setAttribute('d', 'M ' + (cx - r) + ' ' + cy + ' A ' + r + ' ' + r + ' 0 0 1 ' + (cx + r) + ' ' + cy)
-  bg.setAttribute('fill', 'none')
-  bg.setAttribute('stroke', 'var(--clr-border)')
-  bg.setAttribute('stroke-width', '16')
-  bg.setAttribute('stroke-linecap', 'round')
-  svg.appendChild(bg)
-
-  if (pct > 0) {
-    var endAngle = Math.PI * (1 + pct / 100)
-    var endX = cx + r * Math.cos(endAngle)
-    var endY = cy + r * Math.sin(endAngle)
-    var fg = document.createElementNS(svgNS, 'path')
-    fg.setAttribute('d', 'M ' + (cx - r) + ' ' + cy + ' A ' + r + ' ' + r + ' 0 0 1 ' + endX.toFixed(2) + ' ' + endY.toFixed(2))
-    fg.setAttribute('fill', 'none')
-    fg.setAttribute('stroke', gaugeColor)
-    fg.setAttribute('stroke-width', '16')
-    fg.setAttribute('stroke-linecap', 'round')
-    svg.appendChild(fg)
-  }
-
-  var txt = document.createElementNS(svgNS, 'text')
-  txt.setAttribute('x', cx)
-  txt.setAttribute('y', cy + 16)
-  txt.setAttribute('text-anchor', 'middle')
-  txt.setAttribute('font-size', '28')
-  txt.setAttribute('font-weight', '800')
-  txt.setAttribute('fill', 'var(--clr-text-primary)')
-  txt.innerHTML = pct + '%'
-  svg.appendChild(txt)
-
-  wrap.appendChild(svg)
-
-  var legend = document.createElement('div')
-  legend.className = 'dash-donut-legend'
-  data.forEach(function(item) {
-    var ipct = Math.round(item.count / total * 100)
-    var isGreen = /oui|conforme/i.test(item.label)
-    var color = typeof colorMap === 'function' ? colorMap(item.label) : (colorMap[item.label] || (isGreen ? '#16A34A' : '#DC2626'))
-    var row = document.createElement('div')
-    row.className = 'dash-donut-row'
-    row.innerHTML = '<span class="dash-donut-dot" style="background:' + color + '"></span><span class="dash-donut-lbl">' + esc(item.label) + '</span><span class="dash-donut-pct">' + ipct + '%</span><span class="dash-donut-cnt">' + item.count + '</span>'
-    legend.appendChild(row)
-  })
-  wrap.appendChild(legend)
-  card.appendChild(wrap)
-  return card
-}
 
 function createPieChart(title, data, colorMap) {
   var card = document.createElement('div')

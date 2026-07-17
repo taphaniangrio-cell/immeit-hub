@@ -27,33 +27,23 @@ module.exports = async (req, res) => {
   await handleSync(req, res);
 };
 
-// Délègue entièrement à l'orchestrateur unique (lib/auto-sync.js) : même logique de
-// synchronisation qu'on soit déclenché par le cron Vercel, GitHub Actions, ou le bouton
-// "Sync" du tableau de bord. allowInteractive n'est jamais passé ici (défaut false) : un
-// appel API ne doit jamais rester bloqué à attendre une connexion humaine.
-const SYNC_TIMEOUT_MS = 55_000;
-
-function withTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Sync timeout (' + (ms / 1000) + 's)')), ms)
-    ),
-  ]);
-}
-
 async function handleSync(req, res) {
-  try {
-    const result = await withTimeout(autoSync.performSync(), SYNC_TIMEOUT_MS);
-    const status = result.success ? 200 : 502;
-    return res.status(status).json(result);
-  } catch (err) {
-    log('error', 'sync_endpoint_failed', { error: err.message });
-    const isTimeout = err.message.includes('timeout');
-    return res.status(isTimeout ? 504 : 500).json({
-      success: false,
-      count: 0,
-      message: isTimeout ? 'Synchronisation trop longue — réessayez' : 'Échec synchronisation : ' + err.message,
+  // Réponse immédiate avec le cache dispo avant de lancer le sync live
+  const cached = autoSync.loadCache();
+  if (cached) {
+    res.status(200).json({
+      success: true,
+      count: cached.items?.length || 0,
+      syncedAt: cached.syncedAt,
+      source: 'cache',
+      message: 'Sync lancé — mise à jour dans quelques instants',
     });
+  } else {
+    res.status(200).json({ success: true, count: 0, message: 'Sync lancé' });
   }
+
+  // Sync live en arrière-plan (ne bloque pas la réponse)
+  autoSync.performSync().catch(err => {
+    log('error', 'sync_background_failed', { error: err && err.message });
+  });
 }
