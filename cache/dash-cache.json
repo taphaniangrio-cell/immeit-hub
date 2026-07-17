@@ -47170,7 +47170,7 @@
       "stockage": "Non concerné",
       "mise__jour_kpi": "Non concerné",
       "remarque_immeit": "• RAS",
-      "etat_davance_de_la_demande": "Validée par P2M : A solder par IMMEIT",
+      "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "Oui",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -47426,9 +47426,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-17T10:26:15.042Z",
+  "syncedAt": "2026-07-17T10:27:10.713Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
-  "lastModifiedBy": "IBRAHIMA KHALIL SECK (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-17T09:56:07Z"
+  "lastModifiedBy": "SIDOINE ISSA SIGA DIATTA (EXTERNAL)",
+  "lastModifiedDateTime": "2026-07-17T10:26:19Z"
 }
