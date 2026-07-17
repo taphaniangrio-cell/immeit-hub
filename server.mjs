@@ -79,8 +79,7 @@ function loadEnv() {
 }
 
 function getFrontDir() {
-  const distDir = path.join(__dirname, 'temp-react', 'dist');
-  return fs.existsSync(distDir) ? distDir : path.join(__dirname, 'public');
+  return path.join(__dirname, 'temp-react', 'dist');
 }
 
 function serveStatic(res, filePath) {

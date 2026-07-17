@@ -14,7 +14,7 @@ Application interne de génération d'articles LinkedIn pour IMMEIT (maintenance
 ```
 articles-immeit/
 ├── api/            # Endpoints serverless (auth, articles, generate, news, models)
-├── public/         # Frontend (index.html, app.js, style.css, store.js)
+├── temp-react/       # Frontend React (Vite + Tailwind + Zustand)
 ├── lib/            # Modules partagés (db, auth, cors, logger, ai-client, rss-fetcher, …)
 ├── db/schema.sql   # Schéma PostgreSQL
 ├── server.mjs      # Serveur de développement local

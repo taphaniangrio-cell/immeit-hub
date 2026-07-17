@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "installCommand": "node -e \"process.exit(0)\"",
-  "buildCommand": "node -e \"process.exit(0)\"",
-  "outputDirectory": "public",
+  "installCommand": "cd temp-react && npm install",
+  "buildCommand": "cd temp-react && npm run build",
+  "outputDirectory": "temp-react/dist",
   "crons": [
     {
       "path": "/api/sync",

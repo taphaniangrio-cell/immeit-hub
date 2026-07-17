@@ -20,4 +20,8 @@ desktop.ini
 
 # Logs
 *.log
+npm-debug.log*
 .immeit-logs/
+
+# Lint cache
+.eslintcache

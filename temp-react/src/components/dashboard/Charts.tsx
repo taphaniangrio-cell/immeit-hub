@@ -86,32 +86,34 @@ export function DonutChart({ data, colorMap, onFilterClick }: { data: { label: s
 }
 
 export function LineChart({ data }: { data: { month: string; count: number }[] }) {
-  const w = 340, pad = 24, h = 110, labelH = 18;
+  const w = 340, pad = 24, h = 110, labelH = 18, edgePad = 30;
   const maxCount = Math.max(...data.map(d => d.count), 1);
-  const pw = w / Math.max(data.length - 1, 1);
+  const innerW = w - edgePad * 2;
+  const pw = innerW / Math.max(data.length - 1, 1);
   const yScale = (c: number) => pad + (h - pad * 2) * (1 - c / maxCount);
 
-  const points = data.map((d, i) => `${i * pw},${yScale(d.count)}`).join(' ');
+  const points = data.map((d, i) => `${edgePad + i * pw},${yScale(d.count)}`).join(' ');
+  const svgW = w + edgePad * 2;
 
   return (
     <div>
-      <svg width={w} height={h + labelH} className="w-full max-w-full">
+      <svg viewBox={`0 0 ${svgW} ${h + labelH}`} className="w-full" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#0A66C2" stopOpacity="0.2" />
             <stop offset="100%" stopColor="#0A66C2" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <polygon fill="url(#areaGrad)" points={`0,${h} ${points} ${w},${h}`} />
+        <polygon fill="url(#areaGrad)" points={`${edgePad},${h} ${points} ${edgePad + innerW},${h}`} />
         <polyline fill="none" stroke="#0A66C2" strokeWidth="2" points={points} />
         {data.map((d, i) => (
-          <circle key={i} cx={i * pw} cy={yScale(d.count)} r="3" fill="#0A66C2" />
+          <circle key={i} cx={edgePad + i * pw} cy={yScale(d.count)} r="3" fill="#0A66C2" />
         ))}
         {data.map((d, i) => (
-          <text key={`v${i}`} x={i * pw} y={yScale(d.count) - 7} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#374151">{d.count}</text>
+          <text key={`v${i}`} x={edgePad + i * pw} y={yScale(d.count) - 7} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#374151">{d.count}</text>
         ))}
         {data.map((d, i) => (
-          <text key={`l${i}`} x={i * pw} y={h + 12} textAnchor="middle" fontSize="9" fill="#9CA3AF">{d.month}</text>
+          <text key={`l${i}`} x={edgePad + i * pw} y={h + 12} textAnchor="middle" fontSize="9" fill="#9CA3AF">{d.month}</text>
         ))}
       </svg>
     </div>

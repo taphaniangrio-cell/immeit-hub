@@ -40,6 +40,34 @@ function excelToDate(val: string): Date | null {
   return null;
 }
 
+function excelAllDates(val: string): Date[] {
+  if (!val) return [];
+  const dates: Date[] = [];
+  const candidates = String(val).split(/[,;\n\r]+/);
+  for (const c of candidates) {
+    const v = c.trim();
+    if (!v) continue;
+    let d: Date | null = null;
+    if (/^\d+(\.\d+)?$/.test(v)) {
+      d = new Date(1899, 11, 30 + parseFloat(v));
+      if (isNaN(d.getTime()) || d.getFullYear() <= 2000) d = null;
+    } else if (v.includes('/')) {
+      const parts = v.split('/');
+      if (parts.length === 3) {
+        d = new Date(+parts[2], +parts[1] - 1, +parts[0]);
+        if (isNaN(d.getTime()) || d.getFullYear() <= 2000) d = null;
+      }
+    } else {
+      d = new Date(v);
+      if (isNaN(d.getTime()) || d.getFullYear() <= 2000) d = null;
+    }
+    if (d && !dates.some(x => x.getTime() === d!.getTime())) {
+      dates.push(d);
+    }
+  }
+  return dates;
+}
+
 function fmtDate(val: string): string {
   if (!val) return '—';
   const d = excelToDate(val);
@@ -143,10 +171,14 @@ function computeStats(headers: string[], items: Record<string, string>[]) {
 
     const rd = it[f.date] || '';
     if (rd) {
-      const d = excelToDate(rd);
-      if (d) {
+      const dates = excelAllDates(rd);
+      const seenMonths = new Set<string>();
+      for (const d of dates) {
         const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        groups.monthly[mk] = (groups.monthly[mk] || 0) + 1;
+        if (!seenMonths.has(mk)) {
+          seenMonths.add(mk);
+          groups.monthly[mk] = (groups.monthly[mk] || 0) + 1;
+        }
       }
     }
   }
@@ -238,6 +270,10 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
   const [filterType, setFilterType] = useState('');
   const [filterDemandeur, setFilterDemandeur] = useState('');
   const [filterBanc, setFilterBanc] = useState('');
+  const [tablePage, setTablePage] = useState(0);
+  const PAGE_SIZE = 50;
+
+  useEffect(() => { setTablePage(0); }, [filterStatus, filterSearch, filterNature, filterSite, filterType, filterDemandeur, filterBanc, dateStart, dateEnd]);
 
   // Load cache instantly on mount, then fetch fresh data in background
   useEffect(() => {
@@ -275,8 +311,10 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
     if (!dateField) return;
     let minTs = Infinity;
     for (const item of it) {
-      const d = excelToDate(item[dateField]);
-      if (d && d.getTime() < minTs) minTs = d.getTime();
+      const dates = excelAllDates(item[dateField]);
+      for (const d of dates) {
+        if (d.getTime() < minTs) minTs = d.getTime();
+      }
     }
     if (minTs < Infinity) {
       const dd = new Date(minTs);
@@ -368,10 +406,9 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
     let result = items;
     if (dateField) {
       result = result.filter(item => {
-        const d = excelToDate(item[dateField]);
-        if (!d) return true;
-        const t = d.getTime();
-        return t >= dateStartMs && t <= dateEndMs;
+        const dates = excelAllDates(item[dateField]);
+        if (dates.length === 0) return true;
+        return dates.some(d => d.getTime() >= dateStartMs && d.getTime() <= dateEndMs);
       });
     }
     if (normSearch) {
@@ -426,11 +463,8 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
       if (!match) return false;
     }
     if (dateField) {
-      const d = excelToDate(item[dateField]);
-      if (d) {
-        const t = d.getTime();
-        if (t < dateStartMs || t > dateEndMs) return false;
-      }
+      const dates = excelAllDates(item[dateField]);
+      if (dates.length > 0 && !dates.some(d => d.getTime() >= dateStartMs && d.getTime() <= dateEndMs)) return false;
     }
     return true;
   }), [items, statusField, natureField, typeField, siteField, demandeurField, bancField, searchableFields, dateField, normFilterStatus, normNature, normType, normSite, normDemandeur, normBanc, normSearch, dateStartMs, dateEndMs]);
@@ -459,6 +493,26 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
           <p className="text-xs text-gray-400 mt-0.5">{updateInfo}</p>
         </div>
         <div className="flex items-center gap-1.5">
+          {(() => {
+            const dist = dateFilteredStats?.avancementDist || [];
+            const solderCount = dist.filter((a: any) => /valid.e.*p2m.*solder|a solder/i.test(a.label)).reduce((s: number, a: any) => s + a.count, 0);
+            return (
+              <span
+                className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0 ${solderCount > 0 ? 'bg-red-100 animate-pulse' : 'bg-green-100'}`}
+                title={solderCount > 0 ? `${solderCount} demande${solderCount > 1 ? 's' : ''} à solder — allez stocker le rapport rapidement` : 'Aucune demande à solder'}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke={solderCount > 0 ? '#dc2626' : '#16a34a'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                {solderCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center px-1 leading-none">
+                    {solderCount}
+                  </span>
+                )}
+              </span>
+            );
+          })()}
           <button
             onClick={() => refreshData()}
             disabled={refreshLoading || syncLoading}
@@ -562,7 +616,7 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
             {[
-              { label: 'Total demandes', value: total, color: '#0A66C2' },
+              { label: 'Total rapports', value: total, color: '#0A66C2' },
               { label: 'Conf. 1ère diffusion', value: `${stats.tauxConf1}%`, color: stats.tauxConf1 >= 80 ? '#10B981' : stats.tauxConf1 >= 60 ? '#F59E0B' : '#EF4444' },
               { label: 'Conf. vérification', value: `${stats.tauxConfDem}%`, color: stats.tauxConfDem >= 80 ? '#10B981' : stats.tauxConfDem >= 60 ? '#F59E0B' : '#EF4444' },
               { label: 'J+0', value: `${stats.duree.zeroPct}%`, color: stats.duree.zeroPct >= 90 ? '#10B981' : stats.duree.zeroPct >= 70 ? '#F59E0B' : '#EF4444' },
@@ -577,31 +631,220 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
 
           {/* Insights */}
           <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-            <div className="flex gap-6">
-              <div className="shrink-0">
-                <HealthScoreGauge stats={stats} />
+            <div className="flex gap-6 items-start">
+              <div className="w-[55%] shrink-0">
+                {isFiltered && (
+                  <div className="text-[10px] text-gray-400 mb-1 pl-1">
+                    {total.toLocaleString()} rapport{total > 1 ? 's' : ''} filtré{total > 1 ? 's' : ''} sur {(allStats?.total || 0).toLocaleString()}
+                    {filterStatus && <span> — {filterStatus}</span>}
+                    {filterSite && <span> — {filterSite}</span>}
+                    {filterDemandeur && <span> — {filterDemandeur}</span>}
+                    {filterType && <span> — {filterType}</span>}
+                    {filterNature && <span> — {filterNature}</span>}
+                  </div>
+                )}
+                {stats.monthlyTrend.length > 0 && (
+                  <LineChart data={stats.monthlyTrend.map(m => ({ month: fmtMonth(m.month), count: m.count }))} />
+                )}
               </div>
-              <div className="flex-1 space-y-1.5 self-center">
+              <div className="flex-1 space-y-3 pt-1">
               {(() => {
                 const mt = stats.monthlyTrend;
                 if (mt.length === 0) return null;
                 const last = mt[mt.length - 1];
                 const now = new Date();
                 const curMk = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const totalAll = mt.reduce((s, m) => s + m.count, 0);
+                const avg = Math.round(totalAll / mt.length);
                 const items: React.ReactElement[] = [];
-                if (last.month === curMk && mt.length >= 2) {
-                  const prev = mt[mt.length - 2];
-                  const pct = prev.count > 0 ? Math.round(((last.count - prev.count) / prev.count) * 100) : 0;
-                  const arrow = last.count > prev.count ? '\u2197' : last.count < prev.count ? '\u2198' : '\u2192';
-                  items.push(<div key="cur" className="text-xs text-gray-600"><strong>{last.count}</strong> demandes sur les {now.getDate()} premiers jours de {fmtMonth(curMk)} — {arrow} {pct > 0 ? '+' : ''}{pct}% par rapport à {prev.count} sur la même période en {fmtMonth(prev.month)}</div>);
-                } else if (mt.length >= 2) {
-                  const pct = mt[mt.length - 2].count > 0 ? Math.round(((last.count - mt[mt.length - 2].count) / mt[mt.length - 2].count) * 100) : 0;
-                  const arrow = last.count > mt[mt.length - 2].count ? '\u2197' : last.count < mt[mt.length - 2].count ? '\u2198' : '\u2192';
-                  items.push(<div key="cur" className="text-xs text-gray-600"><strong>{last.count}</strong> demandes en {fmtMonth(last.month)} — {arrow} {pct > 0 ? '+' : ''}{pct}% par rapport à {mt[mt.length - 2].count} en {fmtMonth(mt[mt.length - 2].month)}</div>);
-                }
-                if (mt.length >= 3) {
-                  const totalM = mt.reduce((s, m) => s + m.count, 0);
-                  items.push(<div key="total" className="text-xs text-gray-600"><strong>{totalM}</strong> demandes sur {fmtMonth(mt[0].month)}–{fmtMonth(last.month)} — tendance {last.count > mt[0].count ? 'haussière' : last.count < mt[0].count ? 'baissière' : 'stable'} ({mt[0].count} → {last.count})</div>);
+
+                if (isFiltered) {
+                  const pct = totalAll > 0 ? Math.round((total / totalAll) * 100) : 0;
+                  const filterLabel = filterStatus || filterSite || filterDemandeur || filterType || filterNature || '';
+                  items.push(
+                    <div key="filtered" className="flex items-start gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#0A66C2] shrink-0 mt-[5px]"></span>
+                      <span className="text-xs text-gray-700 leading-relaxed">
+                        <strong>{filterLabel}</strong> : {total.toLocaleString()} rapport{total > 1 ? 's' : ''} sur {totalAll.toLocaleString()}
+                        <span className="text-gray-400"> ({pct}% du total)</span>
+                      </span>
+                    </div>
+                  );
+                  const crossItems: React.ReactElement[] = [];
+                  if (!filterStatus && stats.avancementDist.length > 0) {
+                    const top = stats.avancementDist[0];
+                    const topPct = total > 0 ? Math.round((top.count / total) * 100) : 0;
+                    crossItems.push(
+                      <div key="cs" className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-amber-500"></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          Statut : <strong>{top.label}</strong> ({top.count}, {topPct}%)
+                          {stats.avancementDist.length > 1 && <span className="text-gray-400"> — {stats.avancementDist.length} statuts au total</span>}
+                        </span>
+                      </div>
+                    );
+                  }
+                  if (!filterSite && stats.siteDist.length > 0) {
+                    const top = stats.siteDist[0];
+                    const topPct = total > 0 ? Math.round((top.count / total) * 100) : 0;
+                    crossItems.push(
+                      <div key="ss" className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-green-500"></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          Site : <strong>{top.label}</strong> ({top.count}, {topPct}%)
+                          {stats.siteDist.length > 1 && <span className="text-gray-400"> — {stats.siteDist.length} sites</span>}
+                        </span>
+                      </div>
+                    );
+                  }
+                  if (!filterDemandeur && stats.topDemandeurs.length > 0) {
+                    const top = stats.topDemandeurs[0];
+                    const topPct = total > 0 ? Math.round((top.count / total) * 100) : 0;
+                    crossItems.push(
+                      <div key="sd" className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-rose-500"></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          Demandeur : <strong>{top.label}</strong> ({top.count}, {topPct}%)
+                        </span>
+                      </div>
+                    );
+                  }
+                  if (!filterType && stats.typeDist.length > 0) {
+                    const top = stats.typeDist[0];
+                    const topPct = total > 0 ? Math.round((top.count / total) * 100) : 0;
+                    crossItems.push(
+                      <div key="st" className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-purple-500"></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          Type : <strong>{top.label}</strong> ({top.count}, {topPct}%)
+                        </span>
+                      </div>
+                    );
+                  }
+                  if (!filterNature && stats.natureDist.length > 0) {
+                    const top = stats.natureDist[0];
+                    const topPct = total > 0 ? Math.round((top.count / total) * 100) : 0;
+                    crossItems.push(
+                      <div key="sn" className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-teal-500"></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          Nature : <strong>{top.label}</strong> ({top.count}, {topPct}%)
+                        </span>
+                      </div>
+                    );
+                  }
+                  items.push(...crossItems.slice(0, 3));
+                  if (isFiltered && dateField) {
+                    const multiDates = filteredItems.filter(it => {
+                      const dates = excelAllDates(it[dateField] || '');
+                      return dates.length > 1;
+                    });
+                    if (multiDates.length > 0) {
+                      const examples = multiDates.slice(0, 2).map(it => {
+                        const dates = excelAllDates(it[dateField] || '').sort((a, b) => a.getTime() - b.getTime());
+                        const fmt = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
+                        const num = it['N\u00b0(BE / GERICO / APEX)'] || it['N\u00b0'] || '';
+                        const first = fmt(dates[0]);
+                        const last = fmt(dates[dates.length - 1]);
+                        return <span key={num + first}>{num && <strong>{num}</strong>} {first}{dates.length > 2 ? `→${dates.length - 1}×` : ''}→{last}</span>;
+                      });
+                      items.push(
+                        <div key="resub" className="flex items-start gap-2">
+                          <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-indigo-500"></span>
+                          <span className="text-xs text-gray-700 leading-relaxed">
+                            <strong>{multiDates.length}</strong> rapport{multiDates.length > 1 ? 's' : ''} reçu{multiDates.length > 1 ? 's' : ''} plusieurs fois :
+                            <span className="text-gray-400"> {examples}</span>
+                          </span>
+                        </div>
+                      );
+                    }
+                  }
+                } else {
+                  if (last.month === curMk && mt.length >= 2) {
+                    const prev = mt[mt.length - 2];
+                    const pct = prev.count > 0 ? Math.round(((last.count - prev.count) / prev.count) * 100) : 0;
+                    const color = pct > 0 ? 'text-emerald-600' : pct < 0 ? 'text-red-500' : 'text-gray-500';
+                    const dotColor = pct > 0 ? 'bg-emerald-500' : pct < 0 ? 'bg-red-500' : 'bg-gray-400';
+                    const dayOfMonth = now.getDate();
+                    const dailyRate = dayOfMonth > 0 ? Math.round(last.count / dayOfMonth * 10) / 10 : 0;
+                    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                    const projected = Math.round(dailyRate * daysInMonth);
+                    const shortMonth = fmtMonth(curMk).replace('20', "'");
+                    items.push(
+                      <div key="cur" className="flex items-start gap-2">
+                        <span className={`w-2 h-2 rounded-full shrink-0 mt-[5px] ${dotColor}`}></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          <strong>{shortMonth} en cours : {last.count} rapports</strong> sur {dayOfMonth} jours
+                          <span className={`ml-1 font-semibold ${color}`}>{pct > 0 ? '+' : ''}{pct}% vs {fmtMonth(prev.month).replace('20', "'")}</span>
+                        </span>
+                      </div>
+                    );
+                    items.push(
+                      <div key="proj" className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-violet-500"></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          Projection fin {shortMonth} : <strong>{projected} rapports</strong>
+                          <span className="text-gray-400"> (rythme actuel : {dailyRate}/jour)</span>
+                        </span>
+                      </div>
+                    );
+                  } else if (mt.length >= 2) {
+                    const prev = mt[mt.length - 2];
+                    const pct = prev.count > 0 ? Math.round(((last.count - prev.count) / prev.count) * 100) : 0;
+                    const color = pct > 0 ? 'text-emerald-600' : pct < 0 ? 'text-red-500' : 'text-gray-500';
+                    const dotColor = pct > 0 ? 'bg-emerald-500' : pct < 0 ? 'bg-red-500' : 'bg-gray-400';
+                    items.push(
+                      <div key="cur" className="flex items-start gap-2">
+                        <span className={`w-2 h-2 rounded-full shrink-0 mt-[5px] ${dotColor}`}></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          <strong>{fmtMonth(last.month).replace('20', "'")} : {last.count} rapports</strong>
+                          <span className={`ml-1 font-semibold ${color}`}>{pct > 0 ? '+' : ''}{pct}% vs {fmtMonth(prev.month).replace('20', "'")}</span>
+                        </span>
+                      </div>
+                    );
+                  }
+                  items.push(
+                    <div key="total" className="flex items-start gap-2">
+                      <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-[#0A66C2]"></span>
+                      <span className="text-xs text-gray-700 leading-relaxed">
+                        Total {fmtMonth(mt[0].month).replace('20', "'")}–{fmtMonth(last.month).replace('20', "'")} : <strong>{totalAll.toLocaleString()} rapports</strong>
+                        <span className="text-gray-400"> (moyenne : {avg}/mois)</span>
+                      </span>
+                    </div>
+                  );
+                  const completedMonths = mt.filter(m => m.month !== curMk);
+                  if (completedMonths.length >= 2) {
+                    const first = completedMonths[0];
+                    const lastCompleted = completedMonths[completedMonths.length - 1];
+                    const moypct = first.count > 0 ? Math.round(((lastCompleted.count - first.count) / first.count) * 100) : 0;
+                    const moymonth = completedMonths.length > 1 ? Math.round((lastCompleted.count - first.count) / (completedMonths.length - 1)) : 0;
+                    const trendLabel = moypct > 10 ? 'en hausse' : moypct < -10 ? 'en baisse' : 'stable';
+                    const trendColor = moypct > 10 ? 'text-emerald-600' : moypct < -10 ? 'text-red-500' : 'text-gray-500';
+                    const trendDot = moypct > 10 ? 'bg-emerald-500' : moypct < -10 ? 'bg-red-500' : 'bg-gray-400';
+                    items.push(
+                      <div key="trend" className="flex items-start gap-2">
+                        <span className={`w-2 h-2 rounded-full shrink-0 mt-[5px] ${trendDot}`}></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          <strong>Tendance :</strong> <span className={`font-semibold ${trendColor}`}>{trendLabel}</span>
+                          <span className="text-gray-400"> ({moymonth > 0 ? '+' : ''}{moymonth}/mois sur {completedMonths.length} mois complets)</span>
+                        </span>
+                      </div>
+                    );
+                  }
+                  const completedOnly = mt.filter(m => m.month !== curMk);
+                  const best = completedOnly.length > 0 ? completedOnly.reduce((a, b) => a.count > b.count ? a : b) : null;
+                  const worst = completedOnly.length > 0 ? completedOnly.reduce((a, b) => a.count < b.count ? a : b) : null;
+                  if (best && worst && best.month !== worst.month) {
+                    items.push(
+                      <div key="peak" className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-amber-500"></span>
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                          <strong>Record :</strong> {best.count} en {fmtMonth(best.month).replace('20', "'")}
+                          <span className="text-gray-400"> — minimum : {worst.count} en {fmtMonth(worst.month).replace('20', "'")}</span>
+                        </span>
+                      </div>
+                    );
+                  }
                 }
                 return items;
               })()}
@@ -656,13 +899,6 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
             </CollapsibleSection>
           ) : null}
 
-          {/* Évolution mensuelle */}
-          {stats.monthlyTrend.length > 0 ? (
-            <CollapsibleSection title="Évolution mensuelle" className="mb-6">
-              <LineChart data={stats.monthlyTrend.map(m => ({ month: fmtMonth(m.month), count: m.count }))} />
-            </CollapsibleSection>
-          ) : null}
-
           {/* Data Table */}
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
@@ -682,7 +918,7 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredItems.slice(0, 50).map((item: any, i: number) => {
+                  {filteredItems.slice(tablePage * PAGE_SIZE, (tablePage + 1) * PAGE_SIZE).map((item: any, i: number) => {
                     const avancement = item[tableHeaders.avancement] || 'N/A';
                     const nature = item[tableHeaders.nature] || '';
                     const site = item[tableHeaders.site] || '';
@@ -761,9 +997,36 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                   })}
                 </tbody>
               </table>
-              {filteredItems.length > 50 && (
-                <div className="p-3 text-center text-xs text-gray-400 border-t border-gray-100">
-                  Affichage de 50 lignes sur {filteredItems.length}
+              {filteredItems.length > PAGE_SIZE && (
+                <div className="p-3 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+                  <span>
+                    {tablePage * PAGE_SIZE + 1}–{Math.min((tablePage + 1) * PAGE_SIZE, filteredItems.length)} sur {filteredItems.length.toLocaleString()}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      disabled={tablePage === 0}
+                      onClick={() => setTablePage(0)}
+                      className="px-2 py-1 rounded border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >«</button>
+                    <button
+                      disabled={tablePage === 0}
+                      onClick={() => setTablePage(p => p - 1)}
+                      className="px-2 py-1 rounded border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >‹</button>
+                    <span className="px-2 py-1 text-gray-700 font-medium">
+                      {tablePage + 1} / {Math.ceil(filteredItems.length / PAGE_SIZE)}
+                    </span>
+                    <button
+                      disabled={(tablePage + 1) * PAGE_SIZE >= filteredItems.length}
+                      onClick={() => setTablePage(p => p + 1)}
+                      className="px-2 py-1 rounded border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >›</button>
+                    <button
+                      disabled={(tablePage + 1) * PAGE_SIZE >= filteredItems.length}
+                      onClick={() => setTablePage(Math.ceil(filteredItems.length / PAGE_SIZE) - 1)}
+                      className="px-2 py-1 rounded border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    >»</button>
+                  </div>
                 </div>
               )}
             </div>
@@ -789,17 +1052,6 @@ function CollapsibleSection({ title, children, className = '' }: { title: string
   );
 }
 
-function HealthScoreGauge({ stats }: { stats: any }) {
-  const ecart = stats.ecart || { avg: 0 };
-  const avgConf = Math.round((stats.tauxConf1 + stats.tauxConfDem) / 2);
-  const score = Math.round((avgConf + stats.duree.zeroPct + (ecart.avg <= 0 ? 100 : Math.max(0, 100 - ecart.avg * 10))) / 3);
-  const label = score >= 80 ? 'Bon' : score >= 55 ? 'Moyen' : 'À améliorer';
-  return (
-    <div className="flex items-center gap-4">
-      <GaugeChart value={score} label={`Score: ${label}`} color={score >= 80 ? '#10B981' : score >= 55 ? '#F59E0B' : '#EF4444'} />
-    </div>
-  );
-}
 
 function GaugeChartLabeled({ title, data, colorMap }: { title: string; data: { label: string; count: number }[]; colorMap: Record<string, string> }) {
   const total = data.reduce((s, d) => s + d.count, 0) || 1;

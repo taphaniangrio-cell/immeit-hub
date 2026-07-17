@@ -113,14 +113,20 @@ environnements.
 - `scripts/setup-azure-app.mjs` : assistant app-only (nécessite droits admin)
 - `scripts/generate-hash.js` : génération de hash mot de passe
 - `scripts/lint.js` : vérification syntaxique
-- `scripts/check-db-cache.js` : debug — inspection cache DB
+- `scripts/check-db-status.js` : debug — inspection cache DB
 - `scripts/check-token.js` : debug — état token MSAL
 - `scripts/debug-filter.js` : debug — test filtre SharePoint
 
-### Frontend
-- `public/index.html` : page principale
-- `public/app.js` : logique client (v160)
-- `public/style.css` : styles
+### Frontend (React)
+- `temp-react/src/App.tsx` : composant racine
+- `temp-react/src/components/dashboard/DashboardPage.tsx` : dashboard + KPI + cloche alerte
+- `temp-react/src/components/dashboard/Charts.tsx` : graphiques (BarChart, DonutChart, etc.)
+- `temp-react/src/components/features/ArticlesPage.tsx` : page articles
+- `temp-react/src/components/features/Editor.tsx` : éditeur d'articles
+- `temp-react/src/lib/api.ts` : client API (fetch, CSRF, timeout)
+- `temp-react/src/stores/appStore.ts` : state global (Zustand)
+- `temp-react/vite.config.ts` : config Vite + proxy dev `/api`
+- `temp-react/dist/` : build de production (servi par server.mjs et Vercel)
 
 ### Config
 - `.env.example` : variables d'environnement documentées
