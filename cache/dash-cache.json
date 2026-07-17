@@ -47399,7 +47399,7 @@
       "stockage_adveso": "",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Dix sept opérations non-réalisées (17NR) pour différents motifs dont \n  - 7NR pour motif  \"PAS AU CONTRAT\"\n  - 5NR pour motif \"Plan de surveillance à réaliser par le métier\"\n  - 3NR pour motif \"PAS DE BOUTEILLE\"\n  - 2NR pour motif \"\n• \n• \nPour stockage sur ADVESO: Vérification conforme sur site par l'entreprise INDUSTRELEC le 10/06/2026 avec le technicien Brice MENEZ",
+      "remarque_immeit": "• Dix sept opérations non-réalisées (17NR) pour différents motifs dont \n  - 7NR pour motif  \"PAS AU CONTRAT\"\n  - 5NR pour motif \"Plan de surveillance à réaliser par le métier\"\n  - 3NR pour motif \"PAS DE BOUTEILLE\"\n  - 2NR pour motif \"PAS RECU LES PDR\"\n  - 1NR pour motif \"Ecart type < +/-2% de la moyenne des relevés\"\n• \n• \nPour stockage sur ADVESO: Vérification conforme sur site par l'entreprise INDUSTRELEC le 10/06/2026 avec le technicien Brice MENEZ",
       "etat_davance_de_la_demande": "",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
@@ -47426,9 +47426,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-17T09:16:10.351Z",
+  "syncedAt": "2026-07-17T09:17:10.035Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
-  "lastModifiedBy": "IBRAHIMA KHALIL SECK (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-17T09:14:10Z"
+  "lastModifiedBy": "NATACHA DUVAL (EXTERNAL)",
+  "lastModifiedDateTime": "2026-07-17T09:16:19Z"
 }
