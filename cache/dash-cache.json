@@ -45974,7 +45974,7 @@
       "stockage": "Non",
       "mise__jour_kpi": "Non",
       "remarque_immeit": "• Absence OS42\n• Absence CR (CR provisoir OK)\n• Absence N°OT (4 OT présentent dont 1 en double; les mêmes que sur le CR (PREV12 REG12) reçu hier\n• RAS pour les CVs et TDM\nPour stockage sur ADVESO: Vérification conforme effectuée sur site par l'entreprise INDUSTRELEC le 01/07/2026 par le technicien Tom BILLET\nRapport reçu à nouveau le 17/07/2026\n• OS42 42 intégré \n• Pas de changement pour le reste",
-      "etat_davance_de_la_demande": "En attente de traitement IMMEIT",
+      "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "17/07/2026: JFL > Nouvelle version avec OS42",
       "conformit_de_la_demande": "",
       "date_dvaluation_en_cas_de_non_conformit": "",
@@ -47353,7 +47353,7 @@
       "stockage_adveso": "Non concerné",
       "stockage": "Non",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Incohérence sur le N° et la désignation du BE sur la première page de l'entête (1289828) et celui sur la deuxième page (1285410)\n• Absence de la fiche CERFA\n• Sept oprations non-réalisées (7NR) dont 5NR pour motif d'inéxistence et 2NR pour motif \"Pas de raccord de prise de pression\"",
+      "remarque_immeit": "• Incohérence sur le N° et la désignation du BE sur la première page de l'entête (1289828) et celui sur la deuxième page (1285410)\n• Absence de la fiche CERFA\n• Sept opérations non-réalisées (7NR) dont 5NR pour motif d'inéxistence et 2NR pour motif \"Pas de raccord de prise de pression\"",
       "etat_davance_de_la_demande": "En attente validation P2M",
       "commentaire_p2m": "",
       "conformit_de_la_demande": "",
@@ -47380,9 +47380,9 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-17T08:35:12.438Z",
+  "syncedAt": "2026-07-17T08:36:09.808Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "IBRAHIMA KHALIL SECK (EXTERNAL)",
-  "lastModifiedDateTime": "2026-07-17T08:33:16Z"
+  "lastModifiedDateTime": "2026-07-17T08:35:18Z"
 }
