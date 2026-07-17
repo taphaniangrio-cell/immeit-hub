@@ -1,7 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd temp-react && npm install && npx vite build",
-  "outputDirectory": "temp-react/dist",
+  "outputDirectory": "public",
   "crons": [
     {
       "path": "/api/sync",
