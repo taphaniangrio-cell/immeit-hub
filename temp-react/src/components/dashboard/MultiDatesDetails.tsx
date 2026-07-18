@@ -23,29 +23,29 @@ interface ApiResponse {
 
 const fadeStyle = `
   @keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(12px); }
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .fade-slide-up { animation: fadeSlideUp 0.4s ease-out forwards; opacity: 0; }
-  .fade-slide-up-delay-1 { animation-delay: 0.1s; }
-  .fade-slide-up-delay-2 { animation-delay: 0.2s; }
-  .fade-slide-up-delay-3 { animation-delay: 0.3s; }
+  @keyframes countUp {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .fade-up { animation: fadeSlideUp 0.45s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
+  .fade-up-d1 { animation-delay: 0.08s; }
+  .fade-up-d2 { animation-delay: 0.16s; }
+  .fade-up-d3 { animation-delay: 0.24s; }
+  .fade-up-d4 { animation-delay: 0.32s; }
+  .count-pop { animation: countUp 0.4s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
+  .count-pop-d1 { animation-delay: 0.15s; }
+  .count-pop-d2 { animation-delay: 0.25s; }
+  .count-pop-d3 { animation-delay: 0.35s; }
+  .card-hover { transition: all 0.2s ease; }
+  .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px -5px rgba(0,0,0,0.08); }
 `;
 
 function fmt(iso: string) {
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-}
-
-function fmtShort(iso: string) {
-  const d = new Date(iso);
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-}
-
-function fmtMonth(iso: string) {
-  const d = new Date(iso + 'T00:00:00');
-  const months = ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
-  return `${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function getFilterLabel(params: URLSearchParams) {
@@ -65,6 +65,20 @@ function getFilterLabel(params: URLSearchParams) {
   }
   return parts.join(' · ') || 'Tous les rapports';
 }
+
+const natureColor: Record<string, string> = {
+  'Métrologique Préventive': 'bg-blue-50 text-blue-700 border-blue-200',
+  'Métrologique': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  'Préventive Réglementaire': 'bg-amber-50 text-amber-700 border-amber-200',
+  'Préventive': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'Réglementaire': 'bg-orange-50 text-orange-700 border-orange-200',
+};
+
+const statusColor: Record<string, string> = {
+  'Soldée par IMMEIT': 'bg-green-50 text-green-700 border-green-200',
+  'En cours': 'bg-blue-50 text-blue-700 border-blue-200',
+  'En attente': 'bg-amber-50 text-amber-700 border-amber-200',
+};
 
 export default function MultiDatesDetails() {
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -86,134 +100,172 @@ export default function MultiDatesDetails() {
       .finally(() => setLoading(false));
   }, [params]);
 
+  const byCount = useMemo(() => {
+    if (!data) return [];
+    const map: Record<number, { count: number; dates: number; extra: number }> = {};
+    for (const it of data.items) {
+      const n = it.dateCount;
+      if (!map[n]) map[n] = { count: 0, dates: 0, extra: 0 };
+      map[n].count++;
+      map[n].dates += n;
+      map[n].extra += n - 1;
+    }
+    return Object.entries(map)
+      .map(([k, v]) => ({ nDates: Number(k), ...v }))
+      .sort((a, b) => a.nDates - b.nDates);
+  }, [data]);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <style>{fadeStyle}</style>
       <div className="max-w-5xl mx-auto p-4 md:p-6">
-        <div className="flex items-center justify-between mb-6">
+
+        <div className="flex items-center justify-between mb-6 fade-up">
           <div>
-            <h1 className="text-lg font-bold text-gray-800">Rapports reçus plusieurs fois</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Filtre : {filterLabel}</p>
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Rapports reçus plusieurs fois</h1>
+            <p className="text-xs text-gray-400 mt-1 font-medium">{filterLabel}</p>
           </div>
           <button
             onClick={() => { window.opener ? window.close() : window.location.href = '/'; }}
-            className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+            className="group flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:border-gray-300 hover:bg-gray-50 transition-all shadow-sm"
           >
-            ← Retour
+            <span className="group-hover:-translate-x-0.5 transition-transform">←</span> Retour
           </button>
         </div>
 
         {loading && (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <div className="animate-spin w-6 h-6 border-2 border-[#0A66C2] border-t-transparent rounded-full mx-auto mb-3"></div>
-            <p className="text-sm text-gray-500">Chargement...</p>
+          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
+            <div className="animate-spin w-8 h-8 border-2 border-[#0A66C2] border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-sm text-gray-500 font-medium">Chargement des données...</p>
           </div>
         )}
 
         {error && (
-          <div className="bg-white rounded-xl border border-red-200 p-6 text-center">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="bg-red-50 rounded-2xl border border-red-200 p-6 text-center">
+            <p className="text-sm text-red-600 font-medium">{error}</p>
           </div>
         )}
 
         {data && !loading && (
           <>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 fade-slide-up">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                <strong>{data.totalFiltered.toLocaleString()}</strong> rapport{data.totalFiltered > 1 ? 's' : ''} filtré{data.totalFiltered > 1 ? 's' : ''} sur <strong>{data.total.toLocaleString()}</strong> au total.
-                Parmi eux, <strong>{data.items.length}</strong> rapport{data.items.length > 1 ? 's' : ''} ont été
-                déposés <strong>plusieurs fois</strong>.
-              </p>
-              <p className="text-sm text-gray-700 leading-relaxed mt-1">
-                Cela représente <strong>{data.totalDates.toLocaleString()}</strong> traitements individuels,
-                soit <strong>{data.totalExtra}</strong> dépôts supplémentaires par rapport aux rapports uniques.
-              </p>
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm card-hover count-pop">
+                <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Rapports filtrés</div>
+                <div className="text-2xl font-bold text-gray-900">{data.totalFiltered.toLocaleString()}</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">sur {data.total.toLocaleString()} au total</div>
+              </div>
+              <div className="bg-white rounded-2xl border border-indigo-200 p-4 shadow-sm card-hover count-pop count-pop-d1">
+                <div className="text-[10px] uppercase tracking-wider text-indigo-400 font-semibold mb-1">Rapports multi-dépôts</div>
+                <div className="text-2xl font-bold text-indigo-600">{data.items.length}</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">reçus {byCount.map(r => `${r.count}×${r.nDates}x`).join(' + ')}</div>
+              </div>
+              <div className="bg-white rounded-2xl border border-amber-200 p-4 shadow-sm card-hover count-pop count-pop-d2">
+                <div className="text-[10px] uppercase tracking-wider text-amber-500 font-semibold mb-1">Traitements au total</div>
+                <div className="text-2xl font-bold text-amber-600">{data.totalDates.toLocaleString()}</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">+{data.totalExtra} dépôts en plus</div>
+              </div>
             </div>
 
-            {(() => {
-              const byCount: Record<number, { count: number; dates: number; extra: number }> = {};
-              for (const it of data.items) {
-                const n = it.dateCount;
-                if (!byCount[n]) byCount[n] = { count: 0, dates: 0, extra: 0 };
-                byCount[n].count++;
-                byCount[n].dates += n;
-                byCount[n].extra += n - 1;
-              }
-              const rows = Object.entries(byCount)
-                .map(([k, v]) => ({ nDates: Number(k), ...v }))
-                .sort((a, b) => a.nDates - b.nDates);
-              if (rows.length === 0) return null;
-              return (
-                <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 fade-slide-up fade-slide-up-delay-1">
-                  <h2 className="text-sm font-semibold text-gray-700 mb-3">Décomposition par nombre de dates</h2>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-gray-200 text-gray-500">
-                          <th className="text-left py-2 pr-4 font-medium">Reçu X fois</th>
-                          <th className="text-right py-2 px-4 font-medium">Rapports</th>
-                          <th className="text-right py-2 px-4 font-medium">Traitements</th>
-                          <th className="text-right py-2 px-4 font-medium">Dépôts en +</th>
+            {byCount.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-6 shadow-sm fade-up fade-up-d1">
+                <h2 className="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-4">Décomposition par nombre de dates</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-gray-400">
+                        <th className="text-left pb-3 pr-4 font-semibold">Reçu X fois</th>
+                        <th className="text-right pb-3 px-4 font-semibold">Rapports</th>
+                        <th className="text-right pb-3 px-4 font-semibold">Traitements</th>
+                        <th className="text-right pb-3 px-4 font-semibold">+ Dépôts</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {byCount.map(r => (
+                        <tr key={r.nDates} className="border-t border-gray-100">
+                          <td className="py-3 pr-4">
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-sm">{r.nDates}×</span>
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-gray-800">{r.count}</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{r.count} × {r.nDates} = <span className="font-bold text-gray-800">{r.dates.toLocaleString()}</span></td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold text-[11px]">+{r.extra}</span>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map(r => (
-                          <tr key={r.nDates} className="border-b border-gray-50">
-                            <td className="py-2 pr-4 font-medium text-gray-800">{r.nDates}x</td>
-                            <td className="py-2 px-4 text-right text-gray-700">{r.count}</td>
-                            <td className="py-2 px-4 text-right text-gray-700">{r.count} × {r.nDates} = <strong>{r.dates.toLocaleString()}</strong></td>
-                            <td className="py-2 px-4 text-right text-gray-700">+{r.extra.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="border-t-2 border-gray-200 font-semibold text-gray-800">
-                          <td className="py-2 pr-4">Total</td>
-                          <td className="py-2 px-4 text-right">{data.items.length}</td>
-                          <td className="py-2 px-4 text-right">{data.totalFiltered.toLocaleString()} + {data.totalExtra.toLocaleString()} = <strong>{data.totalDates.toLocaleString()}</strong></td>
-                          <td className="py-2 px-4 text-right">+{data.totalExtra.toLocaleString()}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                  <p className="text-[11px] text-gray-400 mt-3 leading-relaxed">
-                    Les <strong>{data.totalFiltered.toLocaleString()}</strong> rapports du filtre
-                    génèrent <strong>{data.totalDates.toLocaleString()}</strong> traitements car <strong>{data.items.length}</strong> d'entre eux ont été déposés plusieurs fois.
-                    Chaque dépôt est un traitement distinct sur Docinfo, d'où les <strong>+{data.totalExtra.toLocaleString()}</strong> dépôts supplémentaires.
-                  </p>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-gray-200">
+                        <td className="pt-3 pr-4 font-bold text-gray-800">Total</td>
+                        <td className="pt-3 px-4 text-right font-bold text-gray-800">{data.items.length}</td>
+                        <td className="pt-3 px-4 text-right text-gray-600">{data.totalFiltered.toLocaleString()} + {data.totalExtra} = <span className="font-bold text-gray-800">{data.totalDates.toLocaleString()}</span></td>
+                        <td className="pt-3 px-4 text-right">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold text-[11px]">+{data.totalExtra}</span>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
-              );
-            })()}
-
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm fade-slide-up fade-slide-up-delay-2">
-              <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-700">
-                  {data.items.length} rapport{data.items.length > 1 ? 's' : ''} concerné{data.items.length > 1 ? 's' : ''}
-                </h2>
-                <span className="text-xs text-gray-400">Trié par nombre de dates décroissant</span>
               </div>
-              <div className="divide-y divide-gray-50">
+            )}
+
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm fade-up fade-up-d2">
+              <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                    <span className="text-indigo-600 font-bold text-lg">{data.items.length}</span>
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-gray-800">
+                      Rapport{data.items.length > 1 ? 's' : ''} concerné{data.items.length > 1 ? 's' : ''}
+                    </h2>
+                    <p className="text-[11px] text-gray-400">Triés par nombre de dates décroissant</p>
+                  </div>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-100">
                 {data.items.map((e, i) => (
-                  <div key={i} className="p-3 hover:bg-gray-50/50 transition-colors fade-slide-up" style={{ animationDelay: `${0.3 + i * 0.03}s` }}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <span className="font-mono text-sm font-semibold text-gray-800">{e.num}</span>
-                        <span className="text-xs text-gray-400 ml-2">({e.dateCount} date{e.dateCount > 1 ? 's' : ''})</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
+                  <div key={i} className="p-4 hover:bg-slate-50/60 transition-all fade-up" style={{ animationDelay: `${0.3 + i * 0.04}s` }}>
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
+                        <span className="text-white font-bold text-sm">{e.dateCount}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-sm font-bold text-gray-900">{e.num}</span>
+                          <span className="text-[10px] text-gray-400 font-medium">{e.dateCount} date{e.dateCount > 1 ? 's' : ''}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mt-2">
                           {e.dates.map((d, di) => (
-                            <span key={di} className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-medium border border-indigo-100">
+                            <span key={di} className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-[11px] font-medium border border-slate-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
                               {fmt(d)}
                             </span>
                           ))}
                         </div>
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[11px] text-gray-500">
-                          {e.nature && <span>{e.nature}</span>}
-                          {e.site && <span>&bull; {e.site}</span>}
-                          {e.status && <span>&bull; {e.status}</span>}
-                          {e.demandeur && <span>&bull; {e.demandeur}</span>}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {e.nature && (
+                            <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${natureColor[e.nature] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                              {e.nature}
+                            </span>
+                          )}
+                          {e.site && (
+                            <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-50 text-slate-600 border border-slate-200">
+                              {e.site}
+                            </span>
+                          )}
+                          {e.status && (
+                            <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${statusColor[e.status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                              {e.status}
+                            </span>
+                          )}
+                          {e.demandeur && (
+                            <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-200">
+                              {e.demandeur}
+                            </span>
+                          )}
                         </div>
                         {e.ot && e.ot !== '-' && (
-                          <div className="mt-0.5 text-[10px] text-gray-400">OT: {e.ot}</div>
+                          <div className="mt-1.5 text-[10px] text-gray-400 font-mono">OT: {e.ot}</div>
                         )}
                       </div>
                     </div>
@@ -221,8 +273,11 @@ export default function MultiDatesDetails() {
                 ))}
               </div>
               {data.items.length === 0 && (
-                <div className="p-8 text-center text-gray-400 text-sm">
-                  Aucun rapport reçu plusieurs fois pour ce filtre.
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">📋</span>
+                  </div>
+                  <p className="text-sm text-gray-400 font-medium">Aucun rapport reçu plusieurs fois pour ce filtre.</p>
                 </div>
               )}
             </div>
