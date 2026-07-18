@@ -21,6 +21,17 @@ interface ApiResponse {
   error?: string;
 }
 
+const fadeStyle = `
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-slide-up { animation: fadeSlideUp 0.4s ease-out forwards; opacity: 0; }
+  .fade-slide-up-delay-1 { animation-delay: 0.1s; }
+  .fade-slide-up-delay-2 { animation-delay: 0.2s; }
+  .fade-slide-up-delay-3 { animation-delay: 0.3s; }
+`;
+
 function fmt(iso: string) {
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
@@ -77,6 +88,7 @@ export default function MultiDatesDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <style>{fadeStyle}</style>
       <div className="max-w-5xl mx-auto p-4 md:p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -106,7 +118,7 @@ export default function MultiDatesDetails() {
 
         {data && !loading && (
           <>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 fade-slide-up">
               <p className="text-sm text-gray-700 leading-relaxed">
                 <strong>{data.totalFiltered.toLocaleString()}</strong> rapport{data.totalFiltered > 1 ? 's' : ''} filtré{data.totalFiltered > 1 ? 's' : ''} sur <strong>{data.total.toLocaleString()}</strong> au total.
                 Parmi eux, <strong>{data.items.length}</strong> rapport{data.items.length > 1 ? 's' : ''} ont été
@@ -132,7 +144,7 @@ export default function MultiDatesDetails() {
                 .sort((a, b) => a.nDates - b.nDates);
               if (rows.length === 0) return null;
               return (
-                <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 fade-slide-up fade-slide-up-delay-1">
                   <h2 className="text-sm font-semibold text-gray-700 mb-3">Décomposition par nombre de dates</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
@@ -173,7 +185,7 @@ export default function MultiDatesDetails() {
               );
             })()}
 
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm fade-slide-up fade-slide-up-delay-2">
               <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-700">
                   {data.items.length} rapport{data.items.length > 1 ? 's' : ''} concerné{data.items.length > 1 ? 's' : ''}
@@ -182,7 +194,7 @@ export default function MultiDatesDetails() {
               </div>
               <div className="divide-y divide-gray-50">
                 {data.items.map((e, i) => (
-                  <div key={i} className="p-3 hover:bg-gray-50/50 transition-colors">
+                  <div key={i} className="p-3 hover:bg-gray-50/50 transition-colors fade-slide-up" style={{ animationDelay: `${0.3 + i * 0.03}s` }}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <span className="font-mono text-sm font-semibold text-gray-800">{e.num}</span>
