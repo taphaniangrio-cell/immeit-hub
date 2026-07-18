@@ -3,6 +3,9 @@
   "installCommand": "cd temp-react && npm install",
   "buildCommand": "cd temp-react && npm run build",
   "outputDirectory": "temp-react/dist",
+  "rewrites": [
+    { "source": "/multi-dates-details", "destination": "/index.html" }
+  ],
   "crons": [
     {
       "path": "/api/sync",

@@ -4,7 +4,7 @@ import { articleApi, authApi } from '../lib/api';
 
 interface AppState {
   session: boolean;
-  view: 'articles' | 'dashboard';
+  view: 'articles' | 'dashboard' | 'insights';
   articles: Article[];
   filter: ArticleStatus | '';
   currentPage: number;
@@ -15,7 +15,7 @@ interface AppState {
   models: ModelsResponse | null;
 
   setSession: (v: boolean) => void;
-  setView: (v: 'articles' | 'dashboard') => void;
+  setView: (v: 'articles' | 'dashboard' | 'insights') => void;
   setFilter: (f: ArticleStatus | '') => void;
   setCurrentPage: (p: number) => void;
   setEditingId: (id: number | null) => void;
@@ -30,7 +30,7 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   session: localStorage.getItem('immeit_session') === '1',
-  view: (localStorage.getItem('immeit_last_view') as 'articles' | 'dashboard') || 'articles',
+  view: (localStorage.getItem('immeit_last_view') as 'articles' | 'dashboard' | 'insights') || 'articles',
   articles: [],
   filter: '',
   currentPage: 1,

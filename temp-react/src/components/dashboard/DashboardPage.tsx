@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useStore } from '../../stores/appStore';
 import { dashboardApi } from '../../lib/api';
 import { DashboardSkeleton } from '../ui/Skeleton';
@@ -6,11 +6,11 @@ import { GaugeChart, BarChart, DonutChart, LineChart } from './Charts';
 
 /* ── helpers réutilisés de l'ancien app.js ── */
 
-function norm(s: string) {
+export function norm(s: string) {
   return s.trim().toLowerCase().normalize('NFC').replace(/\uFFFD/g, '').replace(/[\s/]+/g, '_').replace(/[^a-z0-9_]/g, '');
 }
 
-function findHeader(headers: string[], hint: string) {
+export function findHeader(headers: string[], hint: string) {
   const n = norm(hint);
   const match = headers.find(x => norm(x) === n || x === hint);
   const header = match || headers.find(x => norm(x).includes(n.slice(0, 6))) || '';
@@ -40,7 +40,7 @@ function excelToDate(val: string): Date | null {
   return null;
 }
 
-function excelAllDates(val: string): Date[] {
+export function excelAllDates(val: string): Date[] {
   if (!val) return [];
   const raw = String(val).replace(/\\[rn]+/g, '\n');
   const dates: Date[] = [];
@@ -77,6 +77,14 @@ function excelAllDates(val: string): Date[] {
     }
   }
   return dates;
+}
+
+function excelAllDatesInRange(val: string, startMk: string, endMk: string): Date[] {
+  if (!startMk && !endMk) return excelAllDates(val);
+  return excelAllDates(val).filter(d => {
+    const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return mk >= startMk && mk <= endMk;
+  });
 }
 
 function fmtDate(val: string): string {
@@ -267,9 +275,69 @@ const typeColors = ['#2563EB', '#DC2626', '#16A34A', '#F59E0B', '#9333EA', '#0D9
 const siteColors = ['#DC2626', '#0D9488', '#16A34A', '#F59E0B', '#7C3AED', '#EA580C', '#65A30D', '#EC4899', '#D97706', '#BE123C'];
 const confColors: Record<string, string> = { 'Oui': '#16A34A', 'Non': '#DC2626', 'Conforme': '#16A34A', 'Non conforme': '#DC2626' };
 
+export function fmtDDMMYYYY(d: Date): string {
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function MultiSelect({ label, options, selected, onChange }: {
+  label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const filtered = search ? options.filter(o => o.toLowerCase().includes(search.toLowerCase())) : options;
+  const allFilteredSelected = filtered.length > 0 && filtered.every(o => selected.includes(o));
+
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => { setOpen(!open); setSearch(''); }}
+        className={`text-[10px] font-normal border rounded px-1.5 py-0.5 w-full text-left cursor-pointer hover:border-gray-300 focus:border-blue-300 focus:outline-none truncate ${selected.length > 0 ? 'text-blue-600 bg-blue-50 border-blue-200 font-medium' : 'text-gray-500 bg-white border-gray-200'}`}>
+        {selected.length === 0 ? `Toutes` : `${selected.length} sel.`}
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg min-w-[200px] max-h-[260px] flex flex-col" onClick={e => e.stopPropagation()}>
+          {options.length > 8 && (
+            <div className="p-1.5 border-b border-gray-100">
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…"
+                className="w-full text-[10px] px-2 py-1 border border-gray-200 rounded focus:outline-none focus:border-blue-300" autoFocus />
+            </div>
+          )}
+          <div className="flex items-center justify-between px-2 py-1 border-b border-gray-100 text-[10px]">
+            <button type="button" onClick={() => onChange(allFilteredSelected ? selected.filter(s => !filtered.includes(s)) : [...new Set([...selected, ...filtered])])}
+              className="text-blue-600 hover:text-blue-800 font-medium">{allFilteredSelected ? 'Effacer' : 'Tout'}</button>
+            <span className="text-gray-400">{selected.length}/{options.length}</span>
+          </div>
+          <div className="overflow-y-auto flex-1">
+            {filtered.map(opt => (
+              <label key={opt} className="flex items-center gap-1.5 px-2 py-[3px] hover:bg-gray-50 cursor-pointer text-[10px]">
+                <input type="checkbox" checked={selected.includes(opt)}
+                  onChange={() => onChange(selected.includes(opt) ? selected.filter(v => v !== opt) : [...selected, opt])}
+                  className="rounded border-gray-300" />
+                <span className="truncate">{opt}</span>
+              </label>
+            ))}
+            {filtered.length === 0 && <div className="px-2 py-2 text-[10px] text-gray-400 text-center">Aucun résultat</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── composant principal ── */
 
-export function DashboardPage({ showToast }: { showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void }) {
+export function DashboardPage({ showToast, setView }: { showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void; setView: (v: 'articles' | 'dashboard' | 'insights') => void }) {
   const { dashboardData, setDashboardData } = useStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -279,17 +347,19 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState(new Date().toISOString().slice(0, 10));
   const [defaultDateStart, setDefaultDateStart] = useState('');
+  const [defaultDateEnd, setDefaultDateEnd] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterSearch, setFilterSearch] = useState('');
   const [filterNature, setFilterNature] = useState('');
   const [filterSite, setFilterSite] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterDemandeur, setFilterDemandeur] = useState('');
-  const [filterBanc, setFilterBanc] = useState('');
+  const [filterBanc, setFilterBanc] = useState<string[]>([]);
+  const [filterDateDepot, setFilterDateDepot] = useState<string[]>([]);
   const [tablePage, setTablePage] = useState(0);
   const PAGE_SIZE = 50;
 
-  useEffect(() => { setTablePage(0); }, [filterStatus, filterSearch, filterNature, filterSite, filterType, filterDemandeur, filterBanc, dateStart, dateEnd]);
+  useEffect(() => { setTablePage(0); }, [filterStatus, filterSearch, filterNature, filterSite, filterType, filterDemandeur, filterBanc, filterDateDepot, dateStart, dateEnd]);
 
   // Load cache instantly on mount, then fetch fresh data in background
   useEffect(() => {
@@ -338,6 +408,9 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
       setDateStart(ds);
       setDefaultDateStart(ds);
     }
+    const today = new Date().toISOString().slice(0, 10);
+    setDateEnd(today);
+    setDefaultDateEnd(today);
   }, [dashboardData, dateStart]);
 
   const refreshData = useCallback(async (silent = false) => {
@@ -417,7 +490,7 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
   const normType = useMemo(() => filterType ? norm(filterType) : '', [filterType]);
   const normSite = useMemo(() => filterSite ? norm(filterSite) : '', [filterSite]);
   const normDemandeur = useMemo(() => filterDemandeur ? norm(filterDemandeur) : '', [filterDemandeur]);
-  const normBanc = useMemo(() => filterBanc ? norm(filterBanc) : '', [filterBanc]);
+  const normBanc = useMemo(() => filterBanc.map(v => norm(v)), [filterBanc]);
 
   // Items filtrés par date + recherche + dimensions (sauf statut) — pour comptes dynamiques du dropdown
   const dateFilteredItems = useMemo(() => {
@@ -451,15 +524,84 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
     if (normDemandeur && demandeurField) {
       result = result.filter(item => norm(item[demandeurField] || '') === normDemandeur);
     }
-    if (normBanc && bancField) {
-      result = result.filter(item => norm(item[bancField] || '') === normBanc);
+    if (normBanc.length > 0 && bancField) {
+      result = result.filter(item => normBanc.includes(norm(item[bancField] || '')));
+    }
+    if (filterDateDepot.length > 0 && dateField) {
+      result = result.filter(item => {
+        const raw = item[dateField];
+        if (!raw) return false;
+        const dates = excelAllDates(raw);
+        return dates.some(d => filterDateDepot.includes(fmtDDMMYYYY(d)));
+      });
     }
     return result;
-  }, [items, dateField, filterStartMk, filterEndMk, normSearch, searchableFields, natureField, typeField, siteField, demandeurField, bancField, normNature, normType, normSite, normDemandeur, normBanc]);
+  }, [items, dateField, filterStartMk, filterEndMk, normSearch, searchableFields, natureField, typeField, siteField, demandeurField, bancField, normNature, normType, normSite, normDemandeur, normBanc, filterDateDepot]);
+
+  // Items filtrés uniquement par la plage de dates (sans filtres dimensions) — pour le "sur X" du texte
+  const dateOnlyItems = useMemo(() => {
+    if (!dateField) return items;
+    return items.filter(item => {
+      const raw = item[dateField];
+      if (!raw || !raw.trim()) return false;
+      const dates = excelAllDates(raw);
+      if (dates.length === 0) return true;
+      return dates.some(d => {
+        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        return mk >= filterStartMk && mk <= filterEndMk;
+      });
+    });
+  }, [items, dateField, filterStartMk, filterEndMk]);
 
   const dateFilteredStats = useMemo(() =>
     dateFilteredItems.length > 0 && headers.length > 0 ? computeStats(headers, dateFilteredItems, dateStartMs, dateEndMs) : null,
   [headers, dateFilteredItems, dateStartMs, dateEndMs]);
+
+  const columnOptions = useMemo(() => {
+    let base = items;
+    if (dateField) {
+      base = base.filter(item => {
+        const raw = item[dateField];
+        if (!raw || !raw.trim()) return false;
+        const dates = excelAllDates(raw);
+        if (dates.length === 0) return true;
+        return dates.some(d => {
+          const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          return mk >= filterStartMk && mk <= filterEndMk;
+        });
+      });
+    }
+    const unique = (field: string): string[] => {
+      if (!field) return [];
+      const set = new Set<string>();
+      base.forEach(item => {
+        const val = (item[field] || '').trim();
+        if (val) set.add(val);
+      });
+      return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'));
+    };
+    const dateSet = new Set<string>();
+    if (dateField) {
+      base.forEach(item => {
+        const raw = item[dateField];
+        if (!raw) return;
+        excelAllDates(raw).forEach(d => dateSet.add(fmtDDMMYYYY(d)));
+      });
+    }
+    const dates = Array.from(dateSet).sort((a, b) => {
+      const [da, ma, ya] = a.split('/').map(Number);
+      const [db, mb, yb] = b.split('/').map(Number);
+      return ya * 10000 + ma * 100 + da - (yb * 10000 + mb * 100 + db);
+    });
+    return {
+      dates,
+      site: unique(siteField),
+      demandeur: unique(demandeurField),
+      nature: unique(natureField),
+      status: unique(statusField),
+      banc: unique(bancField),
+    };
+  }, [items, dateField, filterStartMk, filterEndMk, siteField, demandeurField, natureField, statusField, bancField]);
 
   const filteredItems = useMemo(() => items.filter(item => {
     if (normFilterStatus) {
@@ -478,8 +620,14 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
     if (normDemandeur && demandeurField) {
       if (norm(item[demandeurField] || '') !== normDemandeur) return false;
     }
-    if (normBanc && bancField) {
-      if (norm(item[bancField] || '') !== normBanc) return false;
+    if (normBanc.length > 0 && bancField) {
+      if (!normBanc.includes(norm(item[bancField] || ''))) return false;
+    }
+    if (filterDateDepot.length > 0 && dateField) {
+      const raw = item[dateField];
+      if (!raw) return false;
+      const dates = excelAllDates(raw);
+      if (!dates.some(d => filterDateDepot.includes(fmtDDMMYYYY(d)))) return false;
     }
     if (normSearch) {
       const match = searchableFields.some(f => norm(item[f] || '').includes(normSearch));
@@ -495,11 +643,20 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
       })) return false;
     }
     return true;
-  }), [items, statusField, natureField, typeField, siteField, demandeurField, bancField, searchableFields, dateField, normFilterStatus, normNature, normType, normSite, normDemandeur, normBanc, normSearch, filterStartMk, filterEndMk]);
+  }), [items, statusField, natureField, typeField, siteField, demandeurField, bancField, searchableFields, dateField, normFilterStatus, normNature, normType, normSite, normDemandeur, normBanc, normSearch, filterStartMk, filterEndMk, filterDateDepot]);
 
-  const isFiltered = filterStatus !== '' || filterSearch !== '' || filterNature !== '' || filterType !== '' || filterSite !== '' || filterDemandeur !== '' || filterBanc !== '' || (dateStart !== '' && dateStart !== defaultDateStart);
+  const isFiltered = filterStatus !== '' || filterSearch !== '' || filterNature !== '' || filterType !== '' || filterSite !== '' || filterDemandeur !== '' || filterBanc.length > 0 || filterDateDepot.length > 0 || (dateStart !== '' && dateStart !== defaultDateStart) || (dateEnd !== '' && dateEnd !== defaultDateEnd);
   const stats = useMemo(() => filteredItems.length > 0 && headers.length > 0 ? computeStats(headers, filteredItems, dateStartMs, dateEndMs) : null, [headers, filteredItems, dateStartMs, dateEndMs]);
   const total = stats?.total || 0;
+  const totalTraitements = useMemo(() => {
+    if (!dateField) return 0;
+    let c = 0;
+    for (const item of filteredItems) {
+      const raw = item[dateField];
+      if (raw) c += excelAllDatesInRange(raw, filterStartMk, filterEndMk).length;
+    }
+    return c;
+  }, [filteredItems, dateField, filterStartMk, filterEndMk]);
 
   const resetFilters = () => {
     setFilterStatus('');
@@ -508,9 +665,10 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
     setFilterType('');
     setFilterSite('');
     setFilterDemandeur('');
-    setFilterBanc('');
+    setFilterBanc([]);
+    setFilterDateDepot([]);
     setDateStart(defaultDateStart);
-    setDateEnd(new Date().toISOString().slice(0, 10));
+    setDateEnd(defaultDateEnd);
   };
 
   return (
@@ -607,16 +765,22 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
               <button onClick={() => setFilterDemandeur('')} className="ml-0.5 hover:text-rose-900 font-bold">×</button>
             </span>
           ) : null}
-          {filterBanc ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-full text-xs font-medium">
-              {filterBanc}
-              <button onClick={() => setFilterBanc('')} className="ml-0.5 hover:text-cyan-900 font-bold">×</button>
+          {filterBanc.map(b => (
+            <span key={b} className="inline-flex items-center gap-1 px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-full text-xs font-medium">
+              {b}
+              <button onClick={() => setFilterBanc(filterBanc.filter(v => v !== b))} className="ml-0.5 hover:text-cyan-900 font-bold">×</button>
             </span>
-          ) : null}
-          {(dateStart && dateStart !== defaultDateStart) ? (
+          ))}
+          {filterDateDepot.map(d => (
+            <span key={d} className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
+              {d}
+              <button onClick={() => setFilterDateDepot(filterDateDepot.filter(v => v !== d))} className="ml-0.5 hover:text-indigo-900 font-bold">×</button>
+            </span>
+          ))}
+          {((dateStart && dateStart !== defaultDateStart) || (dateEnd && dateEnd !== defaultDateEnd)) ? (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
               {dateStart.split('-').reverse().join('-')} → {dateEnd.split('-').reverse().join('-')}
-              <button onClick={() => { setDateStart(defaultDateStart); setDateEnd(new Date().toISOString().slice(0, 10)); }} className="ml-0.5 hover:text-blue-900 font-bold">×</button>
+              <button onClick={() => { setDateStart(defaultDateStart); setDateEnd(defaultDateEnd); }} className="ml-0.5 hover:text-blue-900 font-bold">×</button>
             </span>
           ) : null}
         </div>
@@ -642,9 +806,10 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
           {/* Health Score — intégré dans Insights ci-dessus */}
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             {[
               { label: 'Total rapports', value: total, color: '#0A66C2' },
+              { label: 'Total traitements', value: totalTraitements, color: '#7C3AED' },
               { label: 'Conf. 1ère diffusion', value: `${stats.tauxConf1}%`, color: stats.tauxConf1 >= 80 ? '#10B981' : stats.tauxConf1 >= 60 ? '#F59E0B' : '#EF4444' },
               { label: 'Conf. vérification', value: `${stats.tauxConfDem}%`, color: stats.tauxConfDem >= 80 ? '#10B981' : stats.tauxConfDem >= 60 ? '#F59E0B' : '#EF4444' },
               { label: 'J+0', value: `${stats.duree.zeroPct}%`, color: stats.duree.zeroPct >= 90 ? '#10B981' : stats.duree.zeroPct >= 70 ? '#F59E0B' : '#EF4444' },
@@ -663,12 +828,15 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
               <div className="w-[55%] shrink-0">
                 {isFiltered && (
                   <div className="text-[10px] text-gray-400 mb-1 pl-1">
-                    {total.toLocaleString()} rapport{total > 1 ? 's' : ''} filtré{total > 1 ? 's' : ''} sur {(allStats?.total || 0).toLocaleString()}
+                    {total.toLocaleString()} rapport{total > 1 ? 's' : ''} filtré{total > 1 ? 's' : ''} sur {dateOnlyItems.length.toLocaleString()}
                     {filterStatus && <span> — {filterStatus}</span>}
                     {filterSite && <span> — {filterSite}</span>}
                     {filterDemandeur && <span> — {filterDemandeur}</span>}
                     {filterType && <span> — {filterType}</span>}
                     {filterNature && <span> — {filterNature}</span>}
+                    {((dateStart && dateStart !== defaultDateStart) || (dateEnd && dateEnd !== defaultDateEnd)) && (
+                      <span> — {dateStart.split('-').reverse().join('/')} → {dateEnd.split('-').reverse().join('/')}</span>
+                    )}
                   </div>
                 )}
                 {stats.monthlyTrend.length > 0 && (
@@ -683,7 +851,6 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                 const now = new Date();
                 const curMk = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const totalAll = mt.reduce((s, m) => s + m.count, 0);
-                const avg = Math.round(totalAll / mt.length);
                 const items: React.ReactElement[] = [];
 
                 if (isFiltered) {
@@ -762,37 +929,6 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                     );
                   }
                    items.push(...crossItems.slice(0, 3));
-                  if (isFiltered && dateField) {
-                    const multiDates = filteredItems.filter(it => {
-                      const dates = excelAllDates(it[dateField] || '');
-                      return dates.length > 1;
-                    });
-                    if (multiDates.length > 0) {
-                      const examples = multiDates.map((it, idx) => {
-                        const raw = it[dateField] || '';
-                        const dates = excelAllDates(raw).sort((a, b) => a.getTime() - b.getTime());
-                        const fmt = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
-                        const numKey = bancField || Object.keys(it).find(k => /be|gerico|apex/i.test(k)) || '';
-                        const num = numKey ? (it[numKey] || '') : '';
-                        const allDates = dates.map(d => fmt(d)).join(', ');
-                        const natureKey = findHeader(headers, 'Nature de la demande');
-                        const otKey = findHeader(headers, 'N°OT');
-                        const nature = natureKey ? (it[natureKey] || '').replace(/\n/g, ' ').trim() : '';
-                        const ot = otKey ? (it[otKey] || '').trim() : '';
-                        const detail = [nature, ot && ot !== '-' ? `OT: ${ot}` : ''].filter(Boolean).join(' · ');
-                        return <div key={`${num}-${idx}`} className="ml-4"><strong>{num || '?'}</strong> : {allDates} <span className="text-gray-300 text-[10px]">({dates.length}d)</span>{detail && <span className="text-gray-400 text-[10px] ml-1">— {detail}</span>}</div>;
-                      });
-                      items.push(
-                        <div key="resub" className="flex items-start gap-2">
-                          <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-indigo-500"></span>
-                          <div className="text-xs text-gray-700 leading-relaxed">
-                            <strong>{multiDates.length}</strong> rapport{multiDates.length > 1 ? 's' : ''} reçu{multiDates.length > 1 ? 's' : ''} plusieurs fois :
-                            <div className="text-gray-500 mt-1 space-y-0.5">{examples}</div>
-                          </div>
-                        </div>
-                      );
-                    }
-                  }
                 } else {
                   if (last.month === curMk && mt.length >= 2) {
                     const prev = mt[mt.length - 2];
@@ -808,7 +944,7 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                       <div key="cur" className="flex items-start gap-2">
                         <span className={`w-2 h-2 rounded-full shrink-0 mt-[5px] ${dotColor}`}></span>
                         <span className="text-xs text-gray-700 leading-relaxed">
-                          <strong>{shortMonth} en cours : {last.count} traitements</strong> sur {dayOfMonth} jours
+                          <strong>{shortMonth} en cours : {last.count} rapports</strong> sur {dayOfMonth} jours
                           <span className={`ml-1 font-semibold ${color}`}>{pct > 0 ? '+' : ''}{pct}% vs {fmtMonth(prev.month).replace('20', "'")}</span>
                         </span>
                       </div>
@@ -817,7 +953,7 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                       <div key="proj" className="flex items-start gap-2">
                         <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-violet-500"></span>
                         <span className="text-xs text-gray-700 leading-relaxed">
-                          Projection fin {shortMonth} : <strong>{projected} traitements</strong>
+                          Projection fin {shortMonth} : <strong>{projected} rapports</strong>
                           <span className="text-gray-400"> (rythme actuel : {dailyRate}/jour)</span>
                         </span>
                       </div>
@@ -831,36 +967,61 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                       <div key="cur" className="flex items-start gap-2">
                         <span className={`w-2 h-2 rounded-full shrink-0 mt-[5px] ${dotColor}`}></span>
                         <span className="text-xs text-gray-700 leading-relaxed">
-                          <strong>{fmtMonth(last.month).replace('20', "'")} : {last.count} traitements</strong>
+                          <strong>{fmtMonth(last.month).replace('20', "'")} : {last.count} rapports</strong>
                           <span className={`ml-1 font-semibold ${color}`}>{pct > 0 ? '+' : ''}{pct}% vs {fmtMonth(prev.month).replace('20', "'")}</span>
                         </span>
                       </div>
                     );
                   }
-                  items.push(
-                    <div key="total" className="flex items-start gap-2">
-                      <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-[#0A66C2]"></span>
-                      <span className="text-xs text-gray-700 leading-relaxed">
-                        Total {fmtMonth(mt[0].month).replace('20', "'")}–{fmtMonth(last.month).replace('20', "'")} : <strong>{totalAll.toLocaleString()} traitements</strong>
-                        <span className="text-gray-400"> (moyenne : {avg}/mois)</span>
-                      </span>
-                    </div>
-                  );
-                  const completedMonths = mt.filter(m => m.month !== curMk);
-                  if (completedMonths.length >= 2) {
-                    const first = completedMonths[0];
-                    const lastCompleted = completedMonths[completedMonths.length - 1];
-                    const moypct = first.count > 0 ? Math.round(((lastCompleted.count - first.count) / first.count) * 100) : 0;
-                    const moymonth = completedMonths.length > 1 ? Math.round((lastCompleted.count - first.count) / (completedMonths.length - 1)) : 0;
-                    const trendLabel = moypct > 10 ? 'en hausse' : moypct < -10 ? 'en baisse' : 'stable';
-                    const trendColor = moypct > 10 ? 'text-emerald-600' : moypct < -10 ? 'text-red-500' : 'text-gray-500';
-                    const trendDot = moypct > 10 ? 'bg-emerald-500' : moypct < -10 ? 'bg-red-500' : 'bg-gray-400';
+                   const completedMonths = mt.filter(m => m.month !== curMk);
+                   const crossItemsAll: React.ReactElement[] = [];
+                   if (stats.avancementDist.length > 0) {
+                     const top = stats.avancementDist[0];
+                     const topPct = total > 0 ? Math.round((top.count / total) * 100) : 0;
+                     crossItemsAll.push(
+                       <div key="cs2" className="flex items-start gap-2">
+                         <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-amber-500"></span>
+                         <span className="text-xs text-gray-700 leading-relaxed">
+                           Statut : <strong>{top.label}</strong> ({top.count}, {topPct}%)
+                           {stats.avancementDist.length > 1 && <span className="text-gray-400"> — {stats.avancementDist.length} statuts au total</span>}
+                         </span>
+                       </div>
+                     );
+                   }
+                   if (stats.siteDist.length > 0) {
+                     const top = stats.siteDist[0];
+                     const topPct = total > 0 ? Math.round((top.count / total) * 100) : 0;
+                     crossItemsAll.push(
+                       <div key="ss2" className="flex items-start gap-2">
+                         <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-green-500"></span>
+                         <span className="text-xs text-gray-700 leading-relaxed">
+                           Site : <strong>{top.label}</strong> ({top.count}, {topPct}%)
+                           {stats.siteDist.length > 1 && <span className="text-gray-400"> — {stats.siteDist.length} sites</span>}
+                         </span>
+                       </div>
+                     );
+                   }
+                   if (stats.topDemandeurs.length > 0) {
+                     const top = stats.topDemandeurs[0];
+                     const topPct = total > 0 ? Math.round((top.count / total) * 100) : 0;
+                     crossItemsAll.push(
+                       <div key="sd2" className="flex items-start gap-2">
+                         <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-rose-500"></span>
+                         <span className="text-xs text-gray-700 leading-relaxed">
+                           Demandeur : <strong>{top.label}</strong> ({top.count}, {topPct}%)
+                         </span>
+                       </div>
+                     );
+                   }
+                   items.push(...crossItemsAll.slice(0, 3));
+                  if (completedMonths.length > 0) {
+                    const avgCompleted = Math.round(completedMonths.reduce((s, m) => s + m.count, 0) / completedMonths.length);
                     items.push(
-                      <div key="trend" className="flex items-start gap-2">
-                        <span className={`w-2 h-2 rounded-full shrink-0 mt-[5px] ${trendDot}`}></span>
+                      <div key="avg" className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-[#0A66C2]"></span>
                         <span className="text-xs text-gray-700 leading-relaxed">
-                          <strong>Tendance :</strong> <span className={`font-semibold ${trendColor}`}>{trendLabel}</span>
-                          <span className="text-gray-400"> ({moymonth > 0 ? '+' : ''}{moymonth}/mois sur {completedMonths.length} mois complets)</span>
+                          <strong>Moyenne :</strong> {avgCompleted} rapports/mois
+                          <span className="text-gray-400"> ({completedMonths.length} mois complets)</span>
                         </span>
                       </div>
                     );
@@ -876,6 +1037,36 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                           <strong>Record :</strong> {best.count} en {fmtMonth(best.month).replace('20', "'")}
                           <span className="text-gray-400"> — minimum : {worst.count} en {fmtMonth(worst.month).replace('20', "'")}</span>
                         </span>
+                      </div>
+                    );
+                  }
+                }
+                if (dateField) {
+                  const multiDates = filteredItems.filter(it => {
+                    const dates = excelAllDatesInRange(it[dateField] || '', filterStartMk, filterEndMk);
+                    return dates.length > 1;
+                  });
+                  if (multiDates.length > 0) {
+                    const totalExtra = multiDates.reduce((s, it) => s + excelAllDatesInRange(it[dateField] || '', filterStartMk, filterEndMk).length - 1, 0);
+                    items.push(
+                      <div key="resub" className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-indigo-500"></span>
+                        <div className="text-xs text-gray-700 leading-relaxed">
+                          <strong>{multiDates.length}</strong> rapport{multiDates.length > 1 ? 's' : ''} reçu{multiDates.length > 1 ? 's' : ''} plusieurs fois
+                          <span className="text-gray-400"> ({total + totalExtra} traitements au total, soit {totalExtra} de plus que de rapports uniques)</span>
+                          {' — '}<button onClick={() => {
+                            const p = new URLSearchParams();
+                            if (filterStatus) p.set('status', filterStatus);
+                            if (filterSite) p.set('site', filterSite);
+                            if (filterDemandeur) p.set('demandeur', filterDemandeur);
+                            if (filterType) p.set('type', filterType);
+                            if (filterNature) p.set('nature', filterNature);
+                            if (filterSearch) p.set('search', filterSearch);
+                            if (dateStart && dateStart !== defaultDateStart) p.set('dateStart', dateStart);
+                            if (dateEnd) p.set('dateEnd', dateEnd);
+                            window.open('/multi-dates-details' + (p.toString() ? '?' + p.toString() : ''), '_blank');
+                          }} className="text-indigo-600 hover:text-indigo-800 underline cursor-pointer">Détails</button>
+                        </div>
                       </div>
                     );
                   }
@@ -941,14 +1132,60 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-gray-50 text-gray-500 uppercase tracking-wider text-[10px]">
-                    <th className="text-left p-3 font-semibold">#</th>
-                    <th className="text-left p-3 font-semibold">Dépôt</th>
-                    <th className="text-left p-3 font-semibold max-md:hidden">Site</th>
-                    <th className="text-left p-3 font-semibold max-md:hidden">Demandeur</th>
-                    <th className="text-left p-3 font-semibold">N°</th>
-                    <th className="text-left p-3 font-semibold">Nature</th>
-                    <th className="text-left p-3 font-semibold">Status</th>
+                  <tr className="bg-gray-50 text-gray-500 text-[10px]">
+                    <th className="text-left p-2 font-semibold w-8 align-top">#</th>
+                    <th className="text-left p-2 font-semibold align-top">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span>Dépôt</span>
+                        <MultiSelect label="Dates" options={columnOptions.dates} selected={filterDateDepot} onChange={setFilterDateDepot} />
+                      </div>
+                    </th>
+                    <th className="text-left p-2 font-semibold max-md:hidden align-top">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span>Site</span>
+                        <select value={filterSite} onChange={e => setFilterSite(e.target.value)}
+                          className="text-[10px] font-normal text-gray-600 bg-white border border-gray-200 rounded px-1 py-0.5 cursor-pointer hover:border-gray-300 focus:border-blue-300 focus:outline-none max-w-[100px]">
+                          <option value="">Tous</option>
+                          {columnOptions.site.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                    </th>
+                    <th className="text-left p-2 font-semibold max-md:hidden align-top">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span>Demand.</span>
+                        <select value={filterDemandeur} onChange={e => setFilterDemandeur(e.target.value)}
+                          className="text-[10px] font-normal text-gray-600 bg-white border border-gray-200 rounded px-1 py-0.5 cursor-pointer hover:border-gray-300 focus:border-blue-300 focus:outline-none max-w-[100px]">
+                          <option value="">Tous</option>
+                          {columnOptions.demandeur.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                    </th>
+                    <th className="text-left p-2 font-semibold align-top">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span>N°</span>
+                        <MultiSelect label="N°" options={columnOptions.banc} selected={filterBanc} onChange={setFilterBanc} />
+                      </div>
+                    </th>
+                    <th className="text-left p-2 font-semibold align-top">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span>Nature</span>
+                        <select value={filterNature} onChange={e => setFilterNature(e.target.value)}
+                          className="text-[10px] font-normal text-gray-600 bg-white border border-gray-200 rounded px-1 py-0.5 cursor-pointer hover:border-gray-300 focus:border-blue-300 focus:outline-none max-w-[110px]">
+                          <option value="">Toutes</option>
+                          {columnOptions.nature.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                    </th>
+                    <th className="text-left p-2 font-semibold align-top">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span>Status</span>
+                        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                          className="text-[10px] font-normal text-gray-600 bg-white border border-gray-200 rounded px-1 py-0.5 cursor-pointer hover:border-gray-300 focus:border-blue-300 focus:outline-none max-w-[110px]">
+                          <option value="">Tous</option>
+                          {columnOptions.status.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -969,7 +1206,28 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                     return (
                       <tr key={i} className={`border-t border-gray-50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} hover:bg-blue-50/40`}>
                         <td className="p-3 text-gray-400 font-mono text-[11px]">{item._row || i + 1}</td>
-                        <td className="p-3 font-medium text-gray-700 text-[11px]">{fmtDate(item[tableHeaders.date])}</td>
+                        <td className="p-3 font-medium text-gray-700 text-[11px]">
+                          {(() => {
+                            const raw = item[tableHeaders.date];
+                            if (!raw) return <span className="text-gray-300">—</span>;
+                            const dates = excelAllDates(raw);
+                            return dates.map((d, di) => {
+                              const dd = String(d.getDate()).padStart(2, '0');
+                              const mm = String(d.getMonth() + 1).padStart(2, '0');
+                              const yyyy = d.getFullYear();
+                              const key = `${dd}/${mm}/${yyyy}`;
+                              const active = filterDateDepot.includes(key);
+                              return (
+                                <button key={di} onClick={() => setFilterDateDepot(active ? filterDateDepot.filter(v => v !== key) : [...filterDateDepot, key])}
+                                  className={`inline-block mr-1 mb-0.5 px-1.5 py-[1px] rounded text-[10px] font-medium border transition-all cursor-pointer ${
+                                    active
+                                      ? 'bg-indigo-100 text-indigo-700 border-indigo-200 ring-1 ring-indigo-200'
+                                      : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-200 hover:text-indigo-600'
+                                  }`}>{key}</button>
+                              );
+                            });
+                          })()}
+                        </td>
                         <td className={`max-md:hidden`}>
                           {site ? (
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-all hover:ring-2 hover:ring-offset-1 ${
@@ -991,7 +1249,7 @@ export function DashboardPage({ showToast }: { showToast: (msg: string, type?: '
                         <td className={`p-3`}>
                           {item[tableHeaders.banc] ? (
                             <span className="font-mono text-gray-500 text-[11px] cursor-pointer hover:text-cyan-700 transition-colors"
-                              onClick={() => setFilterBanc(item[tableHeaders.banc] === filterBanc ? '' : item[tableHeaders.banc])}>{item[tableHeaders.banc]}</span>
+                              onClick={() => setFilterBanc(filterBanc.includes(item[tableHeaders.banc]) ? filterBanc.filter(v => v !== item[tableHeaders.banc]) : [...filterBanc, item[tableHeaders.banc]])}>{item[tableHeaders.banc]}</span>
                           ) : <span className="text-gray-300">—</span>}
                         </td>
                         <td className={`p-3`}>
