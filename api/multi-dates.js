@@ -63,12 +63,7 @@ module.exports = requireAuth(async (req, res) => {
     }
 
     let headers = cachedData.headers || [];
-    let items = cachedData.items;
-
-    if (headers.length > 0 && items.length > 0) {
-      const filtered = sharepoint.filterDataRows(items, headers);
-      if (filtered.length !== items.length) items = filtered;
-    }
+    const items = cachedData.items;
 
     const q = req.query || {};
     const dateField = findHeader(headers, 'Date de dépôt du dossier sur docinfo');
