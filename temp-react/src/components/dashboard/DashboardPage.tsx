@@ -862,7 +862,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
                       <span className="w-2 h-2 rounded-full bg-[#0A66C2] shrink-0 mt-[5px]"></span>
                       <span className="text-xs text-gray-700 leading-relaxed">
                         <strong>{filterLabel}</strong> : {total.toLocaleString()} rapport{total > 1 ? 's' : ''}
-                        <span className="text-gray-400"> ({pct}% {isDateFiltered ? `des ${totalAll.toLocaleString()} en date` : 'du total'})</span>
+                        <span className="text-gray-400"> ({pct}% des {totalAll.toLocaleString()} rapports{isDateFiltered ? ' en date' : ''})</span>
                       </span>
                     </div>
                   );
