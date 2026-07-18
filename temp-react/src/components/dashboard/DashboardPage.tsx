@@ -1021,19 +1021,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
                        </div>
                      );
                    }
-                   items.push(...crossItemsAll.slice(0, 3));
-                  if (completedMonths.length > 0) {
-                    const avgCompleted = Math.round(completedMonths.reduce((s, m) => s + m.count, 0) / completedMonths.length);
-                    items.push(
-                      <div key="avg" className="flex items-start gap-2">
-                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-[#0A66C2]"></span>
-                        <span className="text-xs text-gray-700 leading-relaxed">
-                          <strong>Moyenne :</strong> {avgCompleted} rapports/mois
-                          <span className="text-gray-400"> ({completedMonths.length} mois complets)</span>
-                        </span>
-                      </div>
-                    );
-                  }
+                    items.push(...crossItemsAll.slice(0, 3));
                 }
                 if (dateField) {
                   const multiDates = filteredItems.filter(it => {
