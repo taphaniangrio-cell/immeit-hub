@@ -85,7 +85,7 @@ export function DonutChart({ data, colorMap, onFilterClick }: { data: { label: s
   );
 }
 
-export function LineChart({ data }: { data: { month: string; count: number }[] }) {
+export function LineChart({ data, maxMonth, minMonth }: { data: { month: string; count: number }[]; maxMonth?: string; minMonth?: string }) {
   const w = 340, pad = 24, h = 110, labelH = 18, edgePad = 30;
   const maxCount = Math.max(...data.map(d => d.count), 1);
   const innerW = w - edgePad * 2;
@@ -106,12 +106,19 @@ export function LineChart({ data }: { data: { month: string; count: number }[] }
         </defs>
         <polygon fill="url(#areaGrad)" points={`${edgePad},${h} ${points} ${edgePad + innerW},${h}`} />
         <polyline fill="none" stroke="#0A66C2" strokeWidth="2" points={points} />
-        {data.map((d, i) => (
-          <circle key={i} cx={edgePad + i * pw} cy={yScale(d.count)} r="3" fill="#0A66C2" />
-        ))}
-        {data.map((d, i) => (
-          <text key={`v${i}`} x={edgePad + i * pw} y={yScale(d.count) - 7} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#374151">{d.count}</text>
-        ))}
+        {data.map((d, i) => {
+          const isMax = maxMonth && d.month === maxMonth;
+          const isMin = minMonth && d.month === minMonth;
+          const color = isMax ? '#16A34A' : isMin ? '#DC2626' : '#0A66C2';
+          const r = isMax || isMin ? 4.5 : 3;
+          return <circle key={i} cx={edgePad + i * pw} cy={yScale(d.count)} r={r} fill={color} />;
+        })}
+        {data.map((d, i) => {
+          const isMax = maxMonth && d.month === maxMonth;
+          const isMin = minMonth && d.month === minMonth;
+          const color = isMax ? '#16A34A' : isMin ? '#DC2626' : '#374151';
+          return <text key={`v${i}`} x={edgePad + i * pw} y={yScale(d.count) - 7} textAnchor="middle" fontSize="10" fontWeight="bold" fill={color}>{d.count}</text>;
+        })}
         {data.map((d, i) => (
           <text key={`l${i}`} x={edgePad + i * pw} y={h + 12} textAnchor="middle" fontSize="9" fill="#9CA3AF">{d.month}</text>
         ))}

@@ -462,6 +462,9 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
 
   const allStats = useMemo(() => items.length > 0 && headers.length > 0 ? computeStats(headers, items) : null, [headers, items]);
 
+  const now = new Date();
+  const curMk = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
   const dateField = useMemo(() => headers.length > 0 ? findHeader(headers, "Date de dépôt du dossier sur docinfo") : '', [headers]);
   const statusField = useMemo(() => headers.length > 0 ? findHeader(headers, "Etat d'avance de la demande") : '', [headers]);
   const natureField = useMemo(() => headers.length > 0 ? findHeader(headers, 'Nature de la demande') : '', [headers]);
@@ -839,17 +842,20 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
                     {filterNature && <span> — {filterNature}</span>}
                   </div>
                 )}
-                {stats.monthlyTrend.length > 0 && (
-                  <LineChart data={stats.monthlyTrend.map(m => ({ month: fmtMonth(m.month), count: m.count }))} />
-                )}
+                {stats.monthlyTrend.length > 0 && (() => {
+                  const completedOnly = stats.monthlyTrend.filter(m => m.month !== curMk);
+                  const best = completedOnly.length > 0 ? completedOnly.reduce((a, b) => a.count > b.count ? a : b) : null;
+                  const worst = completedOnly.length > 0 ? completedOnly.reduce((a, b) => a.count < b.count ? a : b) : null;
+                  const maxLabel = best ? fmtMonth(best.month) : undefined;
+                  const minLabel = worst && best && worst.month !== best.month ? fmtMonth(worst.month) : undefined;
+                  return <LineChart data={stats.monthlyTrend.map(m => ({ month: fmtMonth(m.month), count: m.count }))} maxMonth={maxLabel} minMonth={minLabel} />;
+                })()}
               </div>
               <div className="flex-1 space-y-3 pt-1">
               {(() => {
                 const mt = stats.monthlyTrend;
                 if (mt.length === 0) return null;
                 const last = mt[mt.length - 1];
-                const now = new Date();
-                const curMk = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const totalAll = dateOnlyItems.length;
                 const items: React.ReactElement[] = [];
 
@@ -1023,20 +1029,6 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
                         <span className="text-xs text-gray-700 leading-relaxed">
                           <strong>Moyenne :</strong> {avgCompleted} rapports/mois
                           <span className="text-gray-400"> ({completedMonths.length} mois complets)</span>
-                        </span>
-                      </div>
-                    );
-                  }
-                  const completedOnly = mt.filter(m => m.month !== curMk);
-                  const best = completedOnly.length > 0 ? completedOnly.reduce((a, b) => a.count > b.count ? a : b) : null;
-                  const worst = completedOnly.length > 0 ? completedOnly.reduce((a, b) => a.count < b.count ? a : b) : null;
-                  if (best && worst && best.month !== worst.month) {
-                    items.push(
-                      <div key="peak" className="flex items-start gap-2">
-                        <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-amber-500"></span>
-                        <span className="text-xs text-gray-700 leading-relaxed">
-                          <strong>Record :</strong> {best.count} en {fmtMonth(best.month).replace('20', "'")}
-                          <span className="text-gray-400"> — minimum : {worst.count} en {fmtMonth(worst.month).replace('20', "'")}</span>
                         </span>
                       </div>
                     );
