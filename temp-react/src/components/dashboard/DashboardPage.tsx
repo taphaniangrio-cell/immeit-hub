@@ -828,7 +828,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
               <div className="w-[55%] shrink-0">
                 {isFiltered && (
                   <div className="text-[10px] text-gray-400 mb-1 pl-1">
-                    {total.toLocaleString()} rapport{total > 1 ? 's' : ''} filtré{total > 1 ? 's' : ''} sur {dateOnlyItems.length.toLocaleString()}
+                    {total.toLocaleString()} rapport{total > 1 ? 's' : ''} filtré{total > 1 ? 's' : ''} sur {dateOnlyItems.length.toLocaleString()} en date
                     {filterStatus && <span> — {filterStatus}</span>}
                     {filterSite && <span> — {filterSite}</span>}
                     {filterDemandeur && <span> — {filterDemandeur}</span>}
@@ -860,8 +860,8 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
                     <div key="filtered" className="flex items-start gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#0A66C2] shrink-0 mt-[5px]"></span>
                       <span className="text-xs text-gray-700 leading-relaxed">
-                        <strong>{filterLabel}</strong> : {total.toLocaleString()} rapport{total > 1 ? 's' : ''} sur {totalAll.toLocaleString()}
-                        <span className="text-gray-400"> ({pct}% du total)</span>
+                        <strong>{filterLabel}</strong> : {total.toLocaleString()} rapport{total > 1 ? 's' : ''}
+                        <span className="text-gray-400"> ({pct}% des {totalAll.toLocaleString()} en date)</span>
                       </span>
                     </div>
                   );
