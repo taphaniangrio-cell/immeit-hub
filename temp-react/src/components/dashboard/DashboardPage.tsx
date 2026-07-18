@@ -850,7 +850,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
                 const last = mt[mt.length - 1];
                 const now = new Date();
                 const curMk = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                const totalAll = mt.reduce((s, m) => s + m.count, 0);
+                const totalAll = dateOnlyItems.length;
                 const items: React.ReactElement[] = [];
 
                 if (isFiltered) {
