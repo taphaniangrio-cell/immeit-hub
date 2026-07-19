@@ -155,11 +155,20 @@ function computeStats(headers: string[], items: Record<string, string>[], dateSt
   const demandeurLabels: Record<string, string> = {};
   const delais: { duree: number[]; echeance: number[]; ecart: number[] } = { duree: [], echeance: [], ecart: [] };
 
-  function addGroup(slugMap: Record<string, number>, lMap: Record<string, string>, raw: string | undefined) {
+  // Aliases SharePoint : variantes corrompues → forme canonique (normalisées)
+  const TYPE_ALIASES: Record<string, string> = {
+    'contrle des documents de maintenance': 'controle des documents de maintenance',
+  };
+
+  function normalizeKey(s: string) {
+    return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\uFFFD/g, '').replace(/[\s\u00a0]+/g, ' ').trim();
+  }
+
+  function addGroup(slugMap: Record<string, number>, lMap: Record<string, string>, raw: string | undefined, aliases?: Record<string, string>) {
     const v = (raw || '').trim();
     if (!v) return;
-    // Normaliser pour le regroupement : lowercase, retirer \\uFFFD, normaliser les espaces
-    const gk = v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\uFFFD/g, '').replace(/[\s\u00a0]+/g, ' ').trim();
+    let gk = normalizeKey(v);
+    gk = aliases?.[gk] || gk;
     slugMap[gk] = (slugMap[gk] || 0) + 1;
     const prev = lMap[gk];
     if (!prev || (v.indexOf('\uFFFD') < 0 && v.length >= prev.length)) lMap[gk] = v;
@@ -167,7 +176,7 @@ function computeStats(headers: string[], items: Record<string, string>[], dateSt
 
   for (const it of items) {
     addGroup(groups.avancement, labelMap.avancement, it[f.avancement]);
-    addGroup(groups.type, labelMap.type, it[f.type]);
+    addGroup(groups.type, labelMap.type, it[f.type], TYPE_ALIASES);
     addGroup(groups.nature, labelMap.nature, it[f.nature]);
     addGroup(groups.site, labelMap.site, it[f.site]);
 
