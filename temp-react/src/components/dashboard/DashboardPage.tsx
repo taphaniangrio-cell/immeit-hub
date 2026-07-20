@@ -79,11 +79,15 @@ export function excelAllDates(val: string): Date[] {
   return dates;
 }
 
-function excelAllDatesInRange(val: string, startMk: string, endMk: string): Date[] {
-  if (!startMk && !endMk) return excelAllDates(val);
+function toDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function excelAllDatesInRange(val: string, startDk: string, endDk: string): Date[] {
+  if (!startDk && !endDk) return excelAllDates(val);
   return excelAllDates(val).filter(d => {
-    const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    return mk >= startMk && mk <= endMk;
+    const dk = toDateKey(d);
+    return dk >= startDk && dk <= endDk;
   });
 }
 
@@ -125,8 +129,8 @@ function toDist(obj: Record<string, number>, labelMap?: Record<string, string>) 
 }
 
 function computeStats(headers: string[], items: Record<string, string>[], dateStartMs?: number, dateEndMs?: number) {
-  const filterStartMk = dateStartMs !== undefined ? (() => { const d = new Date(dateStartMs); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })() : undefined;
-  const filterEndMk = dateEndMs !== undefined ? (() => { const d = new Date(dateEndMs - 86400000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })() : undefined;
+  const filterStartDk = dateStartMs !== undefined ? (() => { const d = new Date(dateStartMs); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })() : undefined;
+  const filterEndDk = dateEndMs !== undefined ? (() => { const d = new Date(dateEndMs - 86400000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })() : undefined;
   const f = {
     avancement: findHeader(headers, "Etat d'avance de la demande"),
     type: findHeader(headers, 'Type de demande'),
@@ -205,10 +209,11 @@ function computeStats(headers: string[], items: Record<string, string>[], dateSt
       const dates = excelAllDates(rd);
       const seenMonths = new Set<string>();
       for (const d of dates) {
-        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        if (filterStartMk !== undefined && filterEndMk !== undefined) {
-          if (mk < filterStartMk || mk > filterEndMk) continue;
+        const dk = toDateKey(d);
+        if (filterStartDk !== undefined && filterEndDk !== undefined) {
+          if (dk < filterStartDk || dk > filterEndDk) continue;
         }
+        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (!seenMonths.has(mk)) {
           seenMonths.add(mk);
           groups.monthly[mk] = (groups.monthly[mk] || 0) + 1;
@@ -495,8 +500,8 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
 
   const dateStartMs = useMemo(() => dateStart ? new Date(dateStart).getTime() : 0, [dateStart]);
   const dateEndMs = useMemo(() => dateEnd ? new Date(dateEnd).getTime() + 86400000 : Infinity, [dateEnd]);
-  const filterStartMk = useMemo(() => dateStart ? (() => { const d = new Date(dateStart); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })() : '', [dateStart]);
-  const filterEndMk = useMemo(() => dateEnd ? (() => { const d = new Date(dateEnd); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })() : '', [dateEnd]);
+  const filterStartDk = useMemo(() => dateStart ? (() => { const d = new Date(dateStart); return toDateKey(d); })() : '', [dateStart]);
+  const filterEndDk = useMemo(() => dateEnd ? (() => { const d = new Date(dateEnd); return toDateKey(d); })() : '', [dateEnd]);
   const normFilterStatus = useMemo(() => filterStatus ? norm(filterStatus) : '', [filterStatus]);
   const normSearch = useMemo(() => filterSearch ? norm(filterSearch) : '', [filterSearch]);
   const normNature = useMemo(() => filterNature ? norm(filterNature) : '', [filterNature]);
@@ -515,8 +520,8 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
         const dates = excelAllDates(raw);
         if (dates.length === 0) return true;
         return dates.some(d => {
-          const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          return mk >= filterStartMk && mk <= filterEndMk;
+          const dk = toDateKey(d);
+          return dk >= filterStartDk && dk <= filterEndDk;
         });
       });
     }
@@ -549,7 +554,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
       });
     }
     return result;
-  }, [items, dateField, filterStartMk, filterEndMk, normSearch, searchableFields, natureField, typeField, siteField, demandeurField, bancField, normNature, normType, normSite, normDemandeur, normBanc, filterDateDepot]);
+  }, [items, dateField, filterStartDk, filterEndDk, normSearch, searchableFields, natureField, typeField, siteField, demandeurField, bancField, normNature, normType, normSite, normDemandeur, normBanc, filterDateDepot]);
 
   // Items filtrés uniquement par la plage de dates (sans filtres dimensions) — pour le "sur X" du texte
   const dateOnlyItems = useMemo(() => {
@@ -560,11 +565,11 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
       const dates = excelAllDates(raw);
       if (dates.length === 0) return true;
       return dates.some(d => {
-        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        return mk >= filterStartMk && mk <= filterEndMk;
+        const dk = toDateKey(d);
+        return dk >= filterStartDk && dk <= filterEndDk;
       });
     });
-  }, [items, dateField, filterStartMk, filterEndMk]);
+  }, [items, dateField, filterStartDk, filterEndDk]);
 
   const dateFilteredStats = useMemo(() =>
     dateFilteredItems.length > 0 && headers.length > 0 ? computeStats(headers, dateFilteredItems, dateStartMs, dateEndMs) : null,
@@ -579,8 +584,8 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
         const dates = excelAllDates(raw);
         if (dates.length === 0) return true;
         return dates.some(d => {
-          const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          return mk >= filterStartMk && mk <= filterEndMk;
+          const dk = toDateKey(d);
+          return dk >= filterStartDk && dk <= filterEndDk;
         });
       });
     }
@@ -618,7 +623,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
       status: unique(statusField),
       banc: unique(bancField),
     };
-  }, [items, dateField, filterStartMk, filterEndMk, siteField, demandeurField, natureField, statusField, bancField]);
+  }, [items, dateField, filterStartDk, filterEndDk, siteField, demandeurField, natureField, statusField, bancField]);
 
   const filteredItems = useMemo(() => items.filter(item => {
     if (normFilterStatus) {
@@ -655,12 +660,12 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
       if (!raw || !raw.trim()) return false;
       const dates = excelAllDates(raw);
       if (dates.length > 0 && !dates.some(d => {
-        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        return mk >= filterStartMk && mk <= filterEndMk;
+        const dk = toDateKey(d);
+        return dk >= filterStartDk && dk <= filterEndDk;
       })) return false;
     }
     return true;
-  }), [items, statusField, natureField, typeField, siteField, demandeurField, bancField, searchableFields, dateField, normFilterStatus, normNature, normType, normSite, normDemandeur, normBanc, normSearch, filterStartMk, filterEndMk, filterDateDepot]);
+  }), [items, statusField, natureField, typeField, siteField, demandeurField, bancField, searchableFields, dateField, normFilterStatus, normNature, normType, normSite, normDemandeur, normBanc, normSearch, filterStartDk, filterEndDk, filterDateDepot]);
 
   const isFiltered = filterStatus !== '' || filterSearch !== '' || filterNature !== '' || filterType !== '' || filterSite !== '' || filterDemandeur !== '' || filterBanc.length > 0 || filterDateDepot.length > 0 || (dateStart !== '' && dateStart !== defaultDateStart) || (dateEnd !== '' && dateEnd !== defaultDateEnd);
   const stats = useMemo(() => filteredItems.length > 0 && headers.length > 0 ? computeStats(headers, filteredItems, dateStartMs, dateEndMs) : null, [headers, filteredItems, dateStartMs, dateEndMs]);
@@ -670,10 +675,10 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
     let c = 0;
     for (const item of filteredItems) {
       const raw = item[dateField];
-      if (raw) c += excelAllDatesInRange(raw, filterStartMk, filterEndMk).length;
+      if (raw) c += excelAllDatesInRange(raw, filterStartDk, filterEndDk).length;
     }
     return c;
-  }, [filteredItems, dateField, filterStartMk, filterEndMk]);
+  }, [filteredItems, dateField, filterStartDk, filterEndDk]);
 
   const resetFilters = () => {
     setFilterStatus('');
@@ -1039,11 +1044,11 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
                 }
                 if (dateField) {
                   const multiDates = filteredItems.filter(it => {
-                    const dates = excelAllDatesInRange(it[dateField] || '', filterStartMk, filterEndMk);
+                    const dates = excelAllDatesInRange(it[dateField] || '', filterStartDk, filterEndDk);
                     return dates.length > 1;
                   });
                   if (multiDates.length > 0) {
-                    const totalExtra = multiDates.reduce((s, it) => s + excelAllDatesInRange(it[dateField] || '', filterStartMk, filterEndMk).length - 1, 0);
+                    const totalExtra = multiDates.reduce((s, it) => s + excelAllDatesInRange(it[dateField] || '', filterStartDk, filterEndDk).length - 1, 0);
                     items.push(
                       <div key="resub" className="flex items-start gap-2">
                         <span className="w-2 h-2 rounded-full shrink-0 mt-[5px] bg-indigo-500"></span>
