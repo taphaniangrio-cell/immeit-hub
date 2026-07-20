@@ -5798,7 +5798,7 @@
     {
       "_row": 127,
       "site": "Carrières",
-      "demandeurs": "Mal CANO",
+      "demandeurs": "Maël CANO",
       "gestionnaire_demandes": "Moustapha NIANG",
       "type_de_demande": "Contrôle des documents de maintenance",
       "nature_de_la_demande": "Métrologique",
@@ -23985,7 +23985,7 @@
       "stockage_adveso": "Oui",
       "stockage": "Oui",
       "mise__jour_kpi": "Non",
-      "remarque_immeit": "• Rapport déjà jugé non-conforme suite à un CV non-conforme \"CI2026-SCALF03-VM18-DSAnOut-01\" : Les voies DS2621_1_AnaOut 09 et 10 : pas de signal mesuré sur les pins du BOB claté HY_HYB_01 et sur les pins du connecteur Hypertac HY_HYB_01.\n• La fiche de non-conformité est vide sur le contenu\n• A noter aussi que les valeurs des incertitudes ne sont pas mentionnées dans les tableaux des valeurs mesurées sur l'ensemble des CVs \nPour stockage sur Adveso: Vérification Non - conforme sur site par l'entreprise INDUSTRELEC le 17/02/2026 avec le technicien Nicolas PIANON\nRapport reçu à nouveau le 10/04/2026\n• Unique changement, la fiche de non conformité a maintenant un contenu\nRapport reçu à nouveau le 10/04/2026\n• Les valeurs des incertitudes sont maintenant intégrées dans l'ensemble des CVs",
+      "remarque_immeit": "• Rapport déjà jugé non-conforme suite à un CV non-conforme \"CI2026-SCALF03-VM18-DSAnOut-01\" : Les voies DS2621_1_AnaOut 09 et 10 : pas de signal mesuré sur les pins du BOB éclaté HY_HYB_01 et sur les pins du connecteur Hypertac HY_HYB_01.\n• La fiche de non-conformité est vide sur le contenu\n• A noter aussi que les valeurs des incertitudes ne sont pas mentionnées dans les tableaux des valeurs mesurées sur l'ensemble des CVs \nPour stockage sur Adveso: Vérification Non - conforme sur site par l'entreprise INDUSTRELEC le 17/02/2026 avec le technicien Nicolas PIANON\nRapport reçu à nouveau le 10/04/2026\n• Unique changement, la fiche de non conformité a maintenant un contenu\nRapport reçu à nouveau le 10/04/2026\n• Les valeurs des incertitudes sont maintenant intégrées dans l'ensemble des CVs",
       "etat_davance_de_la_demande": "Soldée par IMMEIT",
       "commentaire_p2m": "10/04/2026 REPRISE DU RAPPORT EN COURS\n10/04/2026 REMISE DU RAPPORT SUR BOITES AU LETTRE",
       "conformit_de_la_demande": "",
@@ -28662,7 +28662,7 @@
       "site": "Belchamp",
       "demandeurs": "Jean-François LANSALOT",
       "gestionnaire_demandes": "Ibrahima Khalil SECK",
-      "type_de_demande": "Contrle des documents de maintenance",
+      "type_de_demande": "Contrôle des documents de maintenance",
       "nature_de_la_demande": "Métrologique",
       "nbe_gerico_apex": "RD2006706",
       "nom_du_banc_nom_entreprise": "Convertisseur Charge/Tension",
@@ -47426,7 +47426,7 @@
       "ecart_dheure_contractuel": "#REF!"
     }
   ],
-  "syncedAt": "2026-07-20T06:08:46.634Z",
+  "syncedAt": "2026-07-20T07:38:00.169Z",
   "source": "delegated_silent",
   "_rawCount": 1887,
   "lastModifiedBy": "MOUSTAPHA NIANG (EXTERNAL)",
