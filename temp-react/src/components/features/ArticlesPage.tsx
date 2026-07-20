@@ -23,10 +23,9 @@ export function ArticlesPage() {
   const handleSelect = (article: Article | null) => {
     if (article && article.id) {
       setSelected(article);
-      setEditingId(article.id);
     } else {
       setNewsModal(true);
-      newsApi.list().then(setNews).catch(() => {});
+      newsApi.list().then(res => setNews(res.news || [])).catch(() => {});
     }
   };
 
@@ -36,7 +35,6 @@ export function ArticlesPage() {
       const res = await generateApi.create(payload);
       if (res.article) {
         setSelected(res.article);
-        setEditingId(res.article.id);
         loadArticles();
         showToast('Article généré', 'success');
         setNewsModal(false);
