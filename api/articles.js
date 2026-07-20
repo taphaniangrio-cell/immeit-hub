@@ -23,7 +23,9 @@ module.exports = requireAuth(async (req, res) => {
     switch (method) {
       case 'GET': {
         if (id) {
-          const article = await db.getArticleById(parseInt(id));
+          const parsedId = parseInt(id);
+          if (isNaN(parsedId)) return res.status(400).json({ error: 'ID invalide' });
+          const article = await db.getArticleById(parsedId);
           if (!article) return res.status(404).json({ error: 'Article introuvable' });
           return res.status(200).json({ article });
         }
@@ -40,31 +42,41 @@ module.exports = requireAuth(async (req, res) => {
           return res.status(400).json({ error: 'Le champ corps est requis' });
         }
         body.titre_interne = body.titre_interne.trim().slice(0, 500);
-        if (body.corps) body.corps = body.corps.trim();
+        body.corps = body.corps.trim();
         const article = await db.createArticle(body);
         return res.status(201).json({ article });
       }
 
       case 'PUT': {
         if (!id) return res.status(400).json({ error: 'ID requis' });
+        const parsedId = parseInt(id);
+        if (isNaN(parsedId)) return res.status(400).json({ error: 'ID invalide' });
         const body = req.body || {};
         if (body.statut && !ALLOWED_STATUTS.has(body.statut)) {
-          return res.status(400).json({ error: `Statut invalide. Valeurs autorisées : ${[...ALLOWED_STATUTS].join(', ')}` });
+          return res.status(400).json({ error: `Statut invalide. Valeurs autorisees : ${[...ALLOWED_STATUTS].join(', ')}` });
         }
-        if (body.titre_interne !== undefined && (typeof body.titre_interne !== 'string' || body.titre_interne.trim().length < 1)) {
-          return res.status(400).json({ error: 'titre_interne invalide' });
+        if (body.titre_interne !== undefined) {
+          if (typeof body.titre_interne !== 'string' || body.titre_interne.trim().length < 1) {
+            return res.status(400).json({ error: 'titre_interne invalide' });
+          }
+          body.titre_interne = body.titre_interne.trim().slice(0, 500);
         }
-        if (body.corps !== undefined && typeof body.corps !== 'string') {
-          return res.status(400).json({ error: 'corps invalide' });
+        if (body.corps !== undefined) {
+          if (typeof body.corps !== 'string' || body.corps.trim().length < 1) {
+            return res.status(400).json({ error: 'corps invalide' });
+          }
+          body.corps = body.corps.trim();
         }
-        const article = await db.updateArticle(parseInt(id), body);
+        const article = await db.updateArticle(parsedId, body);
         if (!article) return res.status(404).json({ error: 'Article introuvable' });
         return res.status(200).json({ article });
       }
 
       case 'DELETE': {
         if (!id) return res.status(400).json({ error: 'ID requis' });
-        const deleted = await db.deleteArticle(parseInt(id));
+        const parsedId = parseInt(id);
+        if (isNaN(parsedId)) return res.status(400).json({ error: 'ID invalide' });
+        const deleted = await db.deleteArticle(parsedId);
         if (!deleted) return res.status(404).json({ error: 'Article introuvable' });
         return res.status(200).json({ success: true });
       }

@@ -93,65 +93,91 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
 
   const handleValidate = async () => {
     if (!editingId) return;
-    await articleApi.update(editingId, { statut: 'valide' });
-    setStatut('valide');
-    showToast('Article validé', 'success');
-    loadArticles();
+    try {
+      await articleApi.update(editingId, { statut: 'valide' });
+      setStatut('valide');
+      showToast('Article valide', 'success');
+      loadArticles();
+    } catch (e: any) {
+      showToast(e.message || 'Erreur lors de la validation', 'error');
+    }
   };
 
   const handlePublish = async () => {
     if (!editingId) return;
-    const text = formatForLinkedIn(corps);
-    await navigator.clipboard.writeText(text);
-    await articleApi.update(editingId, { statut: 'publie' });
-    setStatut('publie');
-    showToast('Copié et publié', 'success');
-    loadArticles();
+    try {
+      const text = formatForLinkedIn(corps);
+      await navigator.clipboard.writeText(text).catch(() => {});
+      await articleApi.update(editingId, { statut: 'publie' });
+      setStatut('publie');
+      showToast('Copie et publie', 'success');
+      loadArticles();
+    } catch (e: any) {
+      showToast(e.message || 'Erreur lors de la publication', 'error');
+    }
   };
 
   const handleArchive = async () => {
     if (!editingId) return;
-    await articleApi.update(editingId, { statut: 'archive' });
-    setStatut('archive');
-    showToast('Archivé', 'info');
-    loadArticles();
+    try {
+      await articleApi.update(editingId, { statut: 'archive' });
+      setStatut('archive');
+      showToast('Archive', 'info');
+      loadArticles();
+    } catch (e: any) {
+      showToast(e.message || "Erreur lors de l'archivage", 'error');
+    }
   };
 
   const handleRestore = async () => {
     if (!editingId) return;
-    await articleApi.update(editingId, { statut: 'brouillon' });
-    setStatut('brouillon');
-    showToast('Restauré', 'success');
-    loadArticles();
+    try {
+      await articleApi.update(editingId, { statut: 'brouillon' });
+      setStatut('brouillon');
+      showToast('Restaure', 'success');
+      loadArticles();
+    } catch (e: any) {
+      showToast(e.message || 'Erreur lors de la restauration', 'error');
+    }
   };
 
   const handleDelete = async () => {
     if (!editingId || !confirm('Supprimer cet article ?')) return;
-    await articleApi.delete(editingId);
-    setEditingId(null);
-    showToast('Supprimé', 'info');
-    loadArticles();
+    try {
+      await articleApi.delete(editingId);
+      setEditingId(null);
+      showToast('Supprime', 'info');
+      loadArticles();
+    } catch (e: any) {
+      showToast(e.message || 'Erreur lors de la suppression', 'error');
+    }
   };
 
   const handleImageSearch = async () => {
     if (!imageQuery) return;
-    const res = await imagesApi.search(imageQuery);
-    setImageResults(res.images || []);
+    try {
+      const res = await imagesApi.search(imageQuery);
+      setImageResults(res.photos || []);
+    } catch (e: any) {
+      showToast(e.message || 'Erreur lors de la recherche d\'images', 'error');
+    }
   };
 
   const handleRegen = async () => {
     setGenerating(true);
     try {
       const res = await generateApi.create({
+        customPrompt: regenFeedback || titre,
         feedback: regenFeedback,
         provider: localStorage.getItem('immeit_ai_provider') || undefined,
         model: localStorage.getItem(`immeit_ai_model_${localStorage.getItem('immeit_ai_provider')}`) || undefined,
       });
-      if (res.accroche_a) setAccrocheA(res.accroche_a);
-      if (res.accroche_b) setAccrocheB(res.accroche_b);
-      if (res.corps) setCorps(res.corps);
-      if (res.hashtags) setHashtags(Array.isArray(res.hashtags) ? res.hashtags.join(' ') : res.hashtags);
-      showToast('Article régénéré', 'success');
+      const a = res.article || res;
+      if (a.accroche_a) setAccrocheA(a.accroche_a);
+      if (a.accroche_b) setAccrocheB(a.accroche_b);
+      if (a.corps) setCorps(a.corps);
+      if (a.hashtags) setHashtags(Array.isArray(a.hashtags) ? a.hashtags.join(' ') : a.hashtags);
+      showToast('Article regenere', 'success');
       setRegenOpen(false);
     } catch (e: any) {
       showToast(e.message, 'error');

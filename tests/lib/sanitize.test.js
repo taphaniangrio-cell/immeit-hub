@@ -2,18 +2,18 @@ const sanitizeInput = require('../../lib/sanitize');
 
 describe('sanitize.js — sanitizeInput', () => {
 
-  it('escapes HTML entities', () => {
+  it('preserves HTML tags as plain text (no encoding)', () => {
     expect(sanitizeInput('<script>alert("xss")</script>')).toBe(
-      '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+      '<script>alert("xss")</script>'
     );
   });
 
-  it('escapes ampersand', () => {
-    expect(sanitizeInput('a & b')).toBe('a &amp; b');
+  it('preserves ampersand as plain text', () => {
+    expect(sanitizeInput('a & b')).toBe('a & b');
   });
 
-  it('escapes single quotes', () => {
-    expect(sanitizeInput("it's")).toBe("it&#x27;s");
+  it('preserves single quotes as plain text', () => {
+    expect(sanitizeInput("it's")).toBe("it's");
   });
 
   it('trims whitespace', () => {
