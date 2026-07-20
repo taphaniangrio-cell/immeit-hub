@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useStore } from './stores/appStore';
-import { useToast } from './hooks/useToast';
+import { useToast, ToastProvider } from './contexts/ToastContext';
 import { Shell } from './components/layout/Shell';
 import { ToastContainer } from './components/ui/Toast';
 import { LoginScreen } from './components/features/LoginScreen';
@@ -9,7 +9,7 @@ import { DashboardPage } from './components/dashboard/DashboardPage';
 import { InsightsPage } from './components/dashboard/InsightsPage';
 import MultiDatesDetails from './components/dashboard/MultiDatesDetails';
 
-export default function App() {
+function AppInner() {
   const { session, view, login, logout, setView } = useStore();
   const { toasts, showToast, removeToast } = useToast();
   const [loginError, setLoginError] = useState('');
@@ -44,5 +44,13 @@ export default function App() {
       </Shell>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
   );
 }

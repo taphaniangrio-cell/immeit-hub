@@ -60,7 +60,7 @@ export const dashboardApi = {
 };
 
 export const generateApi = {
-  create: (data: any) => api<any>('/generate', { method: 'POST', body: JSON.stringify(data), timeout: 60000 }),
+  create: (data: any) => api<any>('/generate', { method: 'POST', body: JSON.stringify(data), timeout: 120000 }),
 };
 
 export const modelsApi = {

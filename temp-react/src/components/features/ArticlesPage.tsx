@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../../stores/appStore';
 import { generateApi, newsApi, imagesApi } from '../../lib/api';
-import { useToast } from '../../hooks/useToast';
+import { useToast } from '../../contexts/ToastContext';
 import { Modal } from '../ui/Modal';
 import { ArticlesList } from './ArticlesList';
 import { Editor } from './Editor';

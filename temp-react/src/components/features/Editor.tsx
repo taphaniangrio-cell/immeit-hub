@@ -3,7 +3,7 @@ import { useStore } from '../../stores/appStore';
 import { articleApi, generateApi, imagesApi } from '../../lib/api';
 import { StatusBadge } from '../ui/Badge';
 import { formatHashtags, SUGGESTED_HASHTAGS, LINKEDIN_TARGET, formatForLinkedIn } from '../../lib/utils';
-import { useToast } from '../../hooks/useToast';
+import { useToast } from '../../contexts/ToastContext';
 import { Modal } from '../ui/Modal';
 import type { Article, NewsItem } from '../../types';
 

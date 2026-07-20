@@ -42,15 +42,24 @@ module.exports = requireAuth(async (req, res) => {
     const resolvedModel = model || null;
     const generationType = sanitizedPrompt ? 'custom' : 'news';
 
+    log('info', 'generate_start', { type: generationType, provider: resolvedProvider, model: resolvedModel });
+
     const article = await generateArticle(news, feedback || '', resolvedProvider, resolvedModel, sanitizedPrompt || null);
+
+    if (!article.titre_interne && !article.corps) {
+      log('error', 'generate_empty_response', { article });
+      throw new Error('La réponse IA est vide. Réessaie ou change de modèle.');
+    }
+
+    log('info', 'generate_article_parsed', { titre: article.titre_interne, corpsLength: (article.corps || '').length, modelUsed: article._modelUsed });
 
     let images = [];
     try {
       const imageResult = await findImagesForArticle({
-        titre_interne: sanitizedPrompt || news?.titre || '',
-        hashtags: [],
-        corps: news?.resume || sanitizedPrompt || '',
-        image_keywords: null,
+        titre_interne: article.titre_interne || sanitizedPrompt || news?.titre || '',
+        hashtags: article.hashtags || [],
+        corps: article.corps || '',
+        image_keywords: article.image_keywords || null,
       });
       images = imageResult || [];
     } catch (imgErr) {
@@ -77,6 +86,8 @@ module.exports = requireAuth(async (req, res) => {
       image_photographer_url: primary?.photographer_url || null,
       image_options: images,
     });
+
+    log('info', 'generate_saved', { articleId: savedArticle.id });
 
     log('info', 'article_generated', { provider: resolvedProvider, model: resolvedModel, type: generationType, articleId: savedArticle.id });
 
