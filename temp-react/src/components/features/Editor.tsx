@@ -38,15 +38,16 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
 
   const getFullPayload = useCallback(() => {
     const primaryImage = selectedImage >= 0 && images[selectedImage] ? images[selectedImage] : null;
-    return {
+    const payload: any = {
       titre_interne: titre, accroche_a: accrocheA, accroche_b: accrocheB,
       accroche_active: accrocheActive, corps, hashtags: formatHashtags(hashtags),
-      source_news_source: source,
       image_options: images,
       image_url: primaryImage?.url || null,
       image_photographer: primaryImage?.photographer || null,
       image_photographer_url: primaryImage?.photographer_url || null,
     };
+    if (source) payload.source_news_source = source;
+    return payload;
   }, [titre, accrocheA, accrocheB, accrocheActive, corps, hashtags, source, images, selectedImage]);
 
   const saveFn = useCallback(async () => {
@@ -104,7 +105,7 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
     lastIntegratedRef.current = '';
     setCorps(body);
     setHashtags(article.hashtags?.join(' ') || '');
-    setSource(article.source_news_source || article.source_news_titre || '');
+    setSource(article.source_news_source || article.source_news_titre || article.custom_subject || '');
     setIaInfo(article.ia_provider ? `${article.ia_provider} / ${article.ia_model}` : '');
     setStatut(article.statut || 'brouillon');
     const opts = article.image_options || [];
