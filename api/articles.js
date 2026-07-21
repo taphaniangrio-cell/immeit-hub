@@ -74,6 +74,7 @@ module.exports = requireAuth(async (req, res) => {
         if (body.hashtags !== undefined && !Array.isArray(body.hashtags) && typeof body.hashtags !== 'string') {
           return res.status(400).json({ error: 'hashtags invalide' });
         }
+        log('info', 'articles_put_debug', { id: parsedId, keys: Object.keys(body), hashtagsType: typeof body.hashtags, hashtagsSample: JSON.stringify(body.hashtags).substring(0, 100) });
         const article = await db.updateArticle(parsedId, body);
         if (!article) return res.status(400).json({ error: 'Aucun champ valide à modifier' });
         return res.status(200).json({ article });
@@ -95,7 +96,7 @@ module.exports = requireAuth(async (req, res) => {
     if (err.code === '23505') {
       return res.status(409).json({ error: 'Un article avec cette source existe déjà' });
     }
-    log('error', 'articles_error', { method, id: id || null, error: err.message, code: err.code });
-    return res.status(500).json({ error: 'Erreur interne. Réessaie.' });
+    log('error', 'articles_error', { method, id: id || null, error: err.message, code: err.code, stack: err.stack?.substring(0, 300) });
+    return res.status(500).json({ error: 'Erreur interne. Réessaie.', detail: err.message, code: err.code });
   }
 });
