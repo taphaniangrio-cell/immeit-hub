@@ -74,7 +74,7 @@ module.exports = requireAuth(async (req, res) => {
         if (body.hashtags !== undefined && !Array.isArray(body.hashtags) && typeof body.hashtags !== 'string') {
           return res.status(400).json({ error: 'hashtags invalide' });
         }
-        log('info', 'articles_put_debug', { id: parsedId, keys: Object.keys(body), hashtagsType: typeof body.hashtags, hashtagsSample: JSON.stringify(body.hashtags).substring(0, 100) });
+        log('info', 'articles_put_debug', { id: parsedId, keys: Object.keys(body), hashtagsType: typeof body.hashtags });
         const article = await db.updateArticle(parsedId, body);
         if (!article) return res.status(400).json({ error: 'Aucun champ valide à modifier' });
         return res.status(200).json({ article });
