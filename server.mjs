@@ -12,6 +12,7 @@ const { getServerDir, ensureDir, safeWriteFile } = _require('./lib/cache-dir');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const START_PORT = parseInt(process.env.PORT, 10) || 3000;
+const ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'https://immeit-hub.vercel.app', 'https://hub.immeit.com'];
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -160,6 +161,20 @@ async function handleApi(req, res, pathname, url) {
 
   const handler = _require(handlerFile);
 
+  // Handle CORS preflight (OPTIONS) before auth — no cookies needed
+  if (req.method === 'OPTIONS') {
+    const origin = req.headers.origin || '';
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   try {
     await handler(req, {
       status(code) { this.statusCode = code; return this; },
@@ -168,6 +183,8 @@ async function handleApi(req, res, pathname, url) {
         res.end(JSON.stringify(data));
       },
       setHeader: (k, v) => res.setHeader(k, v),
+      writeHead: (code, headers) => res.writeHead(code, headers),
+      end: (data) => res.end(data),
     });
   } catch (err) {
     console.error(`[API ERROR] ${req.method} ${pathname}:`, err);
