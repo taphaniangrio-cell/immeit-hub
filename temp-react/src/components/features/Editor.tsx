@@ -46,6 +46,7 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
       loadArticles();
       setTimeout(() => setSaveStatus(''), 2000);
     } catch (e: any) {
+      console.error('[Editor saveFn]', e.message, { editingId, titre, corps: corps?.substring(0, 50) });
       setSaveStatus('✗ Erreur');
       showToast(e.message || 'Erreur de sauvegarde', 'error');
     }

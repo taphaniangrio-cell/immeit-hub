@@ -38,7 +38,11 @@ export async function api<T = any>(path: string, options: RequestInit & { timeou
       }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Erreur ${res.status}`);
+        const msg = body.error || `Erreur ${res.status}`;
+        const detail = body.detail ? ` [${body.detail}]` : '';
+        const code = body.code ? ` (${body.code})` : '';
+        console.error(`[API ${res.status}] ${msg}${detail}${code}`, { url, method: fetchOpts.method });
+        throw new Error(`${msg}${detail}${code}`);
       }
       return res.json();
     } catch (e: any) {
