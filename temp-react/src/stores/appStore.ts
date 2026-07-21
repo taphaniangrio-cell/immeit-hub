@@ -54,8 +54,9 @@ export const useStore = create<AppState>((set, get) => ({
       const { filter, currentPage } = get();
       const res = await articleApi.list({ statut: filter || undefined, limit: 10, page: currentPage });
       set({ articles: res.articles || [], totalArticles: res.total || 0 });
-    } catch {
+    } catch (e) {
       // En cas d'erreur, garder les articles existants
+      console.error('loadArticles error:', e);
     }
   },
 

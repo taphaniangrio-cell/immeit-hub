@@ -43,10 +43,11 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
       });
       setDirty(false);
       setSaveStatus('✓ Sauvegardé');
+      loadArticles();
       setTimeout(() => setSaveStatus(''), 2000);
     } catch (e: any) {
       setSaveStatus('✗ Erreur');
-      showToast(e.message, 'error');
+      showToast(e.message || 'Erreur de sauvegarde', 'error');
     }
   }, [editingId, titre, accrocheA, accrocheB, accrocheActive, corps, hashtags, source]);
 

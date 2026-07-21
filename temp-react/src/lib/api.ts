@@ -5,8 +5,8 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
-export async function api<T = any>(path: string, options: RequestInit & { timeout?: number } = {}): Promise<T> {
-  const { timeout = 20000, ...fetchOpts } = options;
+export async function api<T = any>(path: string, options: RequestInit & { timeout?: number; retries?: number } = {}): Promise<T> {
+  const { timeout = 30000, retries = 0, ...fetchOpts } = options;
   const url = `${API_BASE}${path}`;
 
   const headers: Record<string, string> = {};
@@ -16,32 +16,43 @@ export async function api<T = any>(path: string, options: RequestInit & { timeou
     if (csrf) headers['X-CSRF-Token'] = csrf;
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
 
-  if (fetchOpts.signal) {
-    if (fetchOpts.signal.aborted) {
-      controller.abort();
-    } else {
-      fetchOpts.signal.addEventListener('abort', () => controller.abort(), { once: true });
+    if (fetchOpts.signal) {
+      if (fetchOpts.signal.aborted) {
+        controller.abort();
+      } else {
+        fetchOpts.signal.addEventListener('abort', () => controller.abort(), { once: true });
+      }
+    }
+
+    try {
+      const res = await fetch(url, { ...fetchOpts, headers, credentials: 'same-origin', signal: controller.signal });
+      if (res.status === 401) {
+        localStorage.removeItem('immeit_session');
+        window.location.reload();
+        throw new Error('Session expirée');
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Erreur ${res.status}`);
+      }
+      return res.json();
+    } catch (e: any) {
+      lastError = e;
+      if (e.name === 'AbortError' && attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
     }
   }
-
-  try {
-    const res = await fetch(url, { ...fetchOpts, headers, credentials: 'same-origin', signal: controller.signal });
-    if (res.status === 401) {
-      localStorage.removeItem('immeit_session');
-      window.location.reload();
-      throw new Error('Session expirée');
-    }
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `Erreur ${res.status}`);
-    }
-    return res.json();
-  } finally {
-    clearTimeout(timer);
-  }
+  throw lastError;
 }
 
 export const articleApi = {
@@ -54,7 +65,7 @@ export const articleApi = {
   },
   get: (id: number) => api<any>(`/articles?id=${id}`),
   create: (data: any) => api<any>('/articles', { method: 'POST', body: JSON.stringify(data), timeout: 30000 }),
-  update: (id: number, data: any) => api<any>(`/articles?id=${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  update: (id: number, data: any) => api<any>(`/articles?id=${id}`, { method: 'PUT', body: JSON.stringify(data), timeout: 30000, retries: 1 }),
   delete: (id: number) => api<any>(`/articles?id=${id}`, { method: 'DELETE' }),
 };
 
