@@ -450,6 +450,22 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
     setDefaultDateEnd(today);
   }, [dashboardData, dateStart]);
 
+  // Sync date range when month is selected from chart
+  useEffect(() => {
+    if (!filterMonth) {
+      // Restore defaults when month is deselected
+      setDateStart(defaultDateStart);
+      setDateEnd(defaultDateEnd);
+      return;
+    }
+    const [y, m] = filterMonth.split('-').map(Number);
+    const first = `${y}-${String(m).padStart(2, '0')}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    const last = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    setDateStart(first);
+    setDateEnd(last);
+  }, [filterMonth, defaultDateStart, defaultDateEnd]);
+
   const refreshData = useCallback(async (silent = false) => {
     setRefreshLoading(true);
     // Instant feedback: show cached data immediately
