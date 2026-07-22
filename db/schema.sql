@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS articles (
   date_publication TIMESTAMP WITH TIME ZONE,
   date_modification TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX IF NOT EXISTS idx_articles_statut ON articles(statut);
 CREATE INDEX IF NOT EXISTS idx_articles_date_creation ON articles(date_creation DESC);
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS dashboard_cache (
   cache_data JSONB NOT NULL DEFAULT '{}',
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+ALTER TABLE dashboard_cache ENABLE ROW LEVEL SECURITY;
 
 -- Auto-update trigger for dashboard_cache.updated_at
 CREATE OR REPLACE FUNCTION update_dashboard_updated_at()
@@ -85,5 +87,6 @@ CREATE TABLE IF NOT EXISTS alert_history (
   change_hashes TEXT[] DEFAULT '{}',
   source TEXT
 );
+ALTER TABLE alert_history ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX IF NOT EXISTS idx_alert_history_sent_at ON alert_history(sent_at DESC);
