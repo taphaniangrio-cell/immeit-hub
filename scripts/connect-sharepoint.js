@@ -71,7 +71,14 @@ async function main() {
   console.log('');
 
   try {
-    const token = await graphAuth.getGraphToken({ allowInteractive: true });
+    console.log('  ⏳ Lancement du device code Microsoft...');
+    const token = await graphAuth.startInteractiveLogin((resp) => {
+      console.log('');
+      console.log('  ═══════════════════════════════════════════════');
+      console.log('  ' + resp.message);
+      console.log('  ═══════════════════════════════════════════════');
+      console.log('');
+    });
     if (!token) throw new Error('Aucun jeton obtenu');
     console.log('  ✅ Connecté — jeton stocké en base de données (partagé avec Vercel).\n');
 

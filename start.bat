@@ -14,11 +14,12 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3000 "') do (
 )
 timeout /t 1 /nobreak >nul
 
-:: Lancer le serveur
+:: Lancer le serveur avec auto-restart
+:restart
+echo  [INFO] Demarrage du serveur...
 node server.mjs
-
-:: Si le serveur s'arrête
 echo.
-echo  [INFO] Le serveur s'est arrete.
+echo  [INFO] Le serveur s'est arrete. Redemarrage dans 5 secondes...
 echo.
-pause
+timeout /t 5 /nobreak >nul
+goto restart
