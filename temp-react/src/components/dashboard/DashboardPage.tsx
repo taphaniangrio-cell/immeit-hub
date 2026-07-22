@@ -1112,7 +1112,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
                             if (filterType) p.set('type', filterType);
                             if (filterNature) p.set('nature', filterNature);
                             if (filterSearch) p.set('search', filterSearch);
-                            if (dateStart && dateStart !== defaultDateStart) p.set('dateStart', dateStart);
+                            if (dateStart) p.set('dateStart', dateStart);
                             if (dateEnd) p.set('dateEnd', dateEnd);
                             window.open('/multi-dates-details' + (p.toString() ? '?' + p.toString() : ''), '_blank');
                           }} className="text-indigo-600 hover:text-indigo-800 underline cursor-pointer">Détails</button>

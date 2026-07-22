@@ -8,8 +8,8 @@ import { Modal } from '../ui/Modal';
 import { formatHashtags, SUGGESTED_HASHTAGS, LINKEDIN_TARGET, formatForLinkedIn, cn } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
 import { useAutoSave } from '../../hooks/useAutoSave';
-import { ArrowLeft, Save, Check, Copy, Eye, Sparkles, Trash2, Archive, RotateCcw, Plus, FileText } from 'lucide-react';
-import type { Article, NewsItem } from '../../types';
+import { ArrowLeft, Save, Check, Copy, Eye, Sparkles, Trash2, Archive, RotateCcw, Plus, FileText, Image as ImageIcon, ExternalLink, RefreshCw } from 'lucide-react';
+import type { Article } from '../../types';
 
 export function Editor({ article, onBack }: { article: Article | null; onBack: () => void }) {
   const { editingId, setEditingId, isDirty, setDirty, loadArticles } = useStore();
@@ -58,13 +58,13 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
     try {
       await articleApi.update(editingId, getFullPayload());
       setDirty(false);
-      showToast('Sauvegardé', 'success');
+      showToast('Modifications enregistrées', 'success');
       loadArticles();
     } catch (e: any) {
-      console.error('[Editor saveFn]', e.message, { editingId, titre, corps: corps?.substring(0, 50) });
+      console.error('[Editor saveFn]', e.message, { editingId, titre });
       showToast(e.message || 'Erreur de sauvegarde', 'error');
     }
-  }, [editingId, getFullPayload, loadArticles, showToast, setDirty, corps, titre]);
+  }, [editingId, getFullPayload, loadArticles, showToast, setDirty, titre]);
 
   useAutoSave(saveFn, isDirty, editingId, 5000);
 
@@ -125,13 +125,13 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
       const dt = new Date(d);
       const date = dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
       const time = dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      return `${date} ${time}`;
+      return `${date} à ${time}`;
     };
     const datesStr = [];
-    if (article.date_creation) datesStr.push(`Créé: ${fmtDateTime(article.date_creation)}`);
-    if (article.date_validation) datesStr.push(`Validé: ${fmtDateTime(article.date_validation)}`);
-    if (article.date_publication) datesStr.push(`Publié: ${fmtDateTime(article.date_publication)}`);
-    setDates(datesStr.join(' | '));
+    if (article.date_creation) datesStr.push(`Création: ${fmtDateTime(article.date_creation)}`);
+    if (article.date_validation) datesStr.push(`Validation: ${fmtDateTime(article.date_validation)}`);
+    if (article.date_publication) datesStr.push(`Publication: ${fmtDateTime(article.date_publication)}`);
+    setDates(datesStr.join(' • '));
   }, [article?.id, editingId, setEditingId, setDirty]);
 
   const markDirty = useCallback(() => {
@@ -140,6 +140,7 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
 
   const charCount = corps.length;
   const wordCount = corps.split(/\s+/).filter(Boolean).length;
+  const targetPercent = Math.min(100, Math.round((wordCount / LINKEDIN_TARGET) * 100));
 
   const handleSave = async () => {
     if (!editingId || saving) return;
@@ -174,7 +175,7 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
       await articleApi.update(editingId, { ...getFullPayload(), statut: 'publie' });
       setStatut('publie');
       setDirty(false);
-      showToast(clipOk ? 'Copié et publié' : 'Publié (copie presse-papiers échouée)', clipOk ? 'success' : 'warning');
+      showToast(clipOk ? 'Texte copié dans le presse-papiers et statut passé à Publié !' : 'Statut mis à jour', clipOk ? 'success' : 'warning');
       loadArticles();
     } catch (e: any) {
       showToast(e.message || 'Erreur lors de la publication', 'error');
@@ -185,11 +186,11 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
   const handleRestore = () => handleStatusChange('brouillon');
 
   const handleDelete = async () => {
-    if (!editingId || !confirm('Supprimer cet article ?')) return;
+    if (!editingId || !confirm('Supprimer définitivement cet article ?')) return;
     try {
       await articleApi.delete(editingId);
       setEditingId(null);
-      showToast('Supprimé', 'info');
+      showToast('Article supprimé', 'info');
       loadArticles();
       onBack();
     } catch (e: any) {
@@ -248,249 +249,355 @@ export function Editor({ article, onBack }: { article: Article | null; onBack: (
   };
 
   const regenSuggestions = [
-    { label: 'Accroche', text: 'Rends l\'accroche plus percutante' },
-    { label: 'Exemple local', text: 'Ajoute un exemple concret africain' },
-    { label: 'Raccourcir', text: 'Raccourcis de 20%' },
-    { label: 'Plus expert', text: 'Rends le ton plus expert' },
-    { label: 'CTA fort', text: 'Améliore l\'appel à l\'action final' },
+    { label: 'Accroche Choc', text: 'Rends l\'accroche plus percutante et captivante' },
+    { label: 'Cas Concret', text: 'Ajoute un exemple concret de GMAO industriels' },
+    { label: 'Plus Synthétique', text: 'Raccourcis le corps de 20%' },
+    { label: 'Ton Expert', text: 'Rends le ton plus technique et orienté ROI' },
   ];
 
   if (!article && !editingId) {
     return (
-      <div className="flex-1 flex items-center justify-center text-text-muted">
-        <div className="text-center">
-          <FileText size={40} className="mx-auto mb-3 opacity-40" />
-          <p className="text-sm">Sélectionnez un article</p>
+      <div className="flex-1 flex items-center justify-center bg-slate-50/50 p-8">
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 mx-auto mb-4 border border-indigo-100 shadow-xs">
+            <FileText size={28} />
+          </div>
+          <h3 className="text-base font-extrabold text-slate-900 mb-1">Aucun article sélectionné</h3>
+          <p className="text-xs text-slate-500 leading-relaxed">Choisissez un article dans la liste à gauche ou créez-en un nouveau avec l'IA.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-surface-elevated shrink-0">
-        <button onClick={onBack} className="p-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors cursor-pointer">
-          <ArrowLeft size={18} />
-        </button>
-        <input value={titre} onChange={e => { setTitre(e.target.value); markDirty(); }} placeholder="Titre interne…"
-          className="flex-1 text-base font-semibold border-none outline-none bg-transparent text-text-primary placeholder:text-text-muted" />
-        <StatusBadge status={statut} />
+    <div className="flex-1 flex flex-col min-w-0 bg-slate-50/40 h-full">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 bg-white shrink-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <button onClick={onBack} className="p-2 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer md:hidden">
+            <ArrowLeft size={18} />
+          </button>
+          <input
+            value={titre}
+            onChange={e => { setTitre(e.target.value); markDirty(); }}
+            placeholder="Titre interne de l'article..."
+            className="w-full text-base font-extrabold border-0 outline-none bg-transparent text-slate-900 placeholder:text-slate-400 tracking-tight"
+          />
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {isDirty && (
+            <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full animate-pulse">
+              Modifié non enregistré
+            </span>
+          )}
+          <StatusBadge status={statut} />
+        </div>
       </div>
 
-      {/* Status bar */}
-      {statut !== 'archive' && (
-        <div className="flex flex-wrap items-center gap-2 px-4 py-2 bg-surface border-b border-border-light text-xs">
-          {['brouillon', 'en_revision', 'valide', 'publie'].map((s, i) => (
-            <React.Fragment key={s}>
-              {i > 0 && <span className="text-text-muted">→</span>}
-              <span className={cn(
-                "flex items-center gap-1",
-                statut === s ? 'text-primary font-medium' : statut === 'publie' ? 'text-success' : 'text-text-muted'
-              )}>
-                {statut === s && '●'} {s.replace('_', ' ')}
-              </span>
-            </React.Fragment>
-          ))}
-        </div>
-      )}
-
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Images */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-text-muted uppercase">Illustrations</span>
-            <div className="flex gap-1">
-              <button onClick={() => setImageSearchOpen(true)}
-                className="text-xs px-2 py-1 bg-surface-hover rounded-md hover:bg-surface-active text-text-secondary transition-colors cursor-pointer">
-                <Plus size={12} className="inline" /> Ajouter
-              </button>
-              {selectedImage >= 0 && (
-                <button onClick={() => {
-                  setImages(prev => prev.filter((_, i) => i !== selectedImage));
-                  setSelectedImage(-1);
-                  markDirty();
-                }} className="text-xs px-2 py-1 bg-danger-light text-danger rounded-md hover:bg-danger/10 transition-colors cursor-pointer">
-                  <Trash2 size={12} />
-                </button>
-              )}
+      {/* Main Form Content */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Accroche A/B Testing Card */}
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-indigo-600" />
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">Expérimentation A/B Accroche</span>
             </div>
+            <span className="text-[11px] font-semibold text-slate-500">Sélectionnez la variante active</span>
           </div>
-          <div className="flex gap-2 overflow-x-auto">
-            {images.length === 0 ? (
-              <p className="text-xs text-text-muted">Aucune illustration</p>
-            ) : (
-              images.map((img, i) => (
-                <img key={i} src={img.thumbnail || img.url} alt=""
-                  className={cn(
-                    "h-20 rounded-lg cursor-pointer border-2 transition-all",
-                    selectedImage === i ? 'border-primary' : 'border-transparent hover:border-gray-300'
-                  )}
-                  onClick={() => setSelectedImage(i)} />
-              ))
-            )}
-          </div>
-        </Card>
 
-        {/* Accroches */}
-        <Card className="p-4">
-          <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
+          <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
             {(['a', 'b'] as const).map(letter => (
-              <label key={letter} className={cn(
-                "p-3 rounded-xl border-2 cursor-pointer transition-all",
-                accrocheActive === letter ? 'border-primary bg-primary-50/50' : 'border-border hover:border-gray-300'
-              )}>
-                <div className="flex items-center gap-2 mb-2">
-                  <input type="radio" name="accroche" checked={accrocheActive === letter} onChange={() => handleAccrocheSelect(letter)} className="accent-primary" />
-                  <span className="text-xs font-medium">{letter === 'a' ? 'Directe / Choc' : 'Question / Réflexion'}</span>
+              <label
+                key={letter}
+                className={cn(
+                  "p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 relative",
+                  accrocheActive === letter
+                    ? 'border-indigo-600 bg-indigo-50/40 shadow-xs'
+                    : 'border-slate-200/80 bg-white hover:border-slate-300'
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="accroche"
+                      checked={accrocheActive === letter}
+                      onChange={() => handleAccrocheSelect(letter)}
+                      className="accent-indigo-600 w-4 h-4 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-slate-900">
+                      {letter === 'a' ? 'Variante Directe / Choc' : 'Variante Question / Réflexion'}
+                    </span>
+                  </div>
                   <span className={cn(
-                    "text-[10px] px-1.5 py-0.5 rounded-full",
-                    letter === 'a' ? 'bg-primary-100 text-primary' : 'bg-purple-100 text-purple-700'
-                  )}>{letter === 'a' ? 'A' : 'B'}</span>
+                    "text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider",
+                    letter === 'a' ? 'bg-indigo-600 text-white' : 'bg-purple-600 text-white'
+                  )}>
+                    Accroche {letter.toUpperCase()}
+                  </span>
                 </div>
-                <textarea value={letter === 'a' ? accrocheA : accrocheB}
+                <textarea
+                  value={letter === 'a' ? accrocheA : accrocheB}
                   onChange={e => { letter === 'a' ? setAccrocheA(e.target.value) : setAccrocheB(e.target.value); markDirty(); }}
-                  className="w-full text-sm border-0 outline-none resize-none bg-transparent text-text-primary placeholder:text-text-muted" rows={2} placeholder="Accroche…" />
+                  className="w-full text-xs font-medium leading-relaxed border-0 outline-none resize-none bg-transparent text-slate-800 placeholder:text-slate-400"
+                  rows={3}
+                  placeholder="Rédigez l'accroche..."
+                />
               </label>
             ))}
           </div>
         </Card>
 
-        {/* Corps */}
-        <Card className="p-4">
-          <label className="text-xs font-medium text-text-muted uppercase mb-2 block">Corps de l'article</label>
-          <textarea value={corps} onChange={e => { setCorps(e.target.value); markDirty(); }}
-            className="w-full min-h-[320px] text-sm border-0 outline-none resize-none text-text-primary placeholder:text-text-muted" placeholder="Rédigez l'article ici…" />
-          <div className="flex justify-end gap-4 text-xs text-text-muted mt-2">
-            <span className={charCount > 3000 ? 'text-danger' : charCount > 2900 ? 'text-warning' : ''}>{charCount} / 3000 car.</span>
-            <span>{wordCount} mots ({Math.round(wordCount / LINKEDIN_TARGET * 100)}% cible LinkedIn)</span>
+        {/* Body Card */}
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">Corps de l'article LinkedIn</span>
+            <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
+              <span className={charCount > 3000 ? 'text-rose-600 font-bold' : ''}>{charCount} / 3000 car.</span>
+              <span className="w-1 h-1 bg-slate-300 rounded-full" />
+              <span>{wordCount} mots</span>
+            </div>
+          </div>
+
+          <textarea
+            value={corps}
+            onChange={e => { setCorps(e.target.value); markDirty(); }}
+            className="w-full min-h-[300px] text-sm font-normal leading-relaxed border-0 outline-none resize-y text-slate-900 placeholder:text-slate-400 bg-transparent"
+            placeholder="Rédigez ou éditez le contenu de votre post ici..."
+          />
+
+          {/* Progress bar to target */}
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-4">
+            <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-indigo-500 to-blue-600 h-full rounded-full transition-all duration-300"
+                style={{ width: `${targetPercent}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-slate-600 shrink-0">{targetPercent}% cible LinkedIn</span>
           </div>
         </Card>
 
-        {/* Hashtags */}
-        <Card className="p-4">
-          <label className="text-xs font-medium text-text-muted uppercase mb-2 block">Hashtags</label>
-          <input value={hashtags} onChange={e => { setHashtags(e.target.value); markDirty(); }} placeholder="#maintenance #GMAO"
-            className="w-full text-sm border border-border rounded-lg px-3 py-2 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-white text-text-primary placeholder:text-text-muted transition-colors" />
-          <div className="flex flex-wrap gap-1 mt-2">
+        {/* Media Illustrations Card */}
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon size={16} className="text-indigo-600" />
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">Illustrations Média (Pexels)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setImageSearchOpen(true)}>
+                <Plus size={14} /> Chercher image
+              </Button>
+              {selectedImage >= 0 && (
+                <Button variant="danger" size="sm" onClick={() => {
+                  setImages(prev => prev.filter((_, i) => i !== selectedImage));
+                  setSelectedImage(-1);
+                  markDirty();
+                }}>
+                  <Trash2 size={14} /> Supprimer
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-3 max-md:grid-cols-2">
+            {images.length === 0 ? (
+              <p className="text-xs font-medium text-slate-400 col-span-full py-4 text-center">Aucune illustration sélectionnée. Cliquez sur "+ Chercher image".</p>
+            ) : (
+              images.map((img, i) => (
+                <div
+                  key={i}
+                  onClick={() => setSelectedImage(i)}
+                  className={cn(
+                    "relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all duration-200 aspect-video group",
+                    selectedImage === i ? 'border-indigo-600 ring-4 ring-indigo-500/20 shadow-md' : 'border-transparent hover:border-slate-300'
+                  )}
+                >
+                  <img src={img.thumbnail || img.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  {selectedImage === i && (
+                    <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full p-1 shadow-sm">
+                      <Check size={12} />
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+
+        {/* Hashtags Card */}
+        <Card className="p-5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 block mb-2">Hashtags recommandés</span>
+          <input
+            value={hashtags}
+            onChange={e => { setHashtags(e.target.value); markDirty(); }}
+            placeholder="#maintenance #GMAO #fiabilite"
+            className="w-full h-10 px-3.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
+          />
+          <div className="flex flex-wrap gap-1.5 mt-3">
             {SUGGESTED_HASHTAGS.map(h => (
-              <button key={h} onClick={() => { if (!hashtags.includes(h)) { setHashtags(prev => `${prev} ${h}`.trim()); markDirty(); } }}
-                className="text-xs px-2 py-1 bg-surface-hover rounded-full hover:bg-surface-active text-text-secondary transition-colors cursor-pointer">{h}</button>
+              <button
+                key={h}
+                onClick={() => { if (!hashtags.includes(h)) { setHashtags(prev => `${prev} ${h}`.trim()); markDirty(); } }}
+                className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-pointer"
+              >
+                {h}
+              </button>
             ))}
           </div>
         </Card>
 
-        {/* Meta panel */}
-        <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+        {/* Meta Info Grid */}
+        <div className="grid grid-cols-3 gap-4 max-md:grid-cols-1">
           <Card className="p-4">
-            <label className="text-xs font-medium text-text-muted uppercase block mb-1">Source</label>
-            {source ? (
-              <div className="text-sm text-text-primary font-medium">{source}</div>
-            ) : (
-              <input value={source} onChange={e => { setSource(e.target.value); markDirty(); }} placeholder="Ajouter une source…"
-                className="w-full text-sm border-0 outline-none bg-transparent text-text-muted" />
-            )}
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">Actualité Source</span>
+            <p className="text-xs font-bold text-slate-800 truncate">{source || '—'}</p>
           </Card>
           <Card className="p-4">
-            <label className="text-xs font-medium text-text-muted uppercase block mb-1">IA / Modèle</label>
-            <div className="text-sm text-text-secondary">{iaInfo || '—'}</div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">Fournisseur / Modèle IA</span>
+            <p className="text-xs font-bold text-indigo-600 truncate">{iaInfo || '—'}</p>
           </Card>
-          <Card className="p-4 col-span-full">
-            <label className="text-xs font-medium text-text-muted uppercase block mb-1">Dates</label>
-            <div className="text-sm text-text-secondary">{dates || '—'}</div>
+          <Card className="p-4">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">Historique des Dates</span>
+            <p className="text-xs font-medium text-slate-600 truncate">{dates || '—'}</p>
           </Card>
         </div>
       </div>
 
-      {/* Action bar */}
-      <div className="flex items-center justify-between p-3 border-t border-border bg-surface-elevated shrink-0">
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={handleSave} disabled={saving} loading={saving} size="sm">
-            <Save size={14} />
+      {/* Action Footer Bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200/80 bg-white shrink-0 shadow-lg">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="gradient" onClick={handleSave} disabled={saving} loading={saving} size="sm">
+            <Save size={15} />
             Enregistrer
           </Button>
           <Button variant="success" onClick={handleValidate} disabled={statut !== 'brouillon' && statut !== 'en_revision'} size="sm">
-            <Check size={14} />
+            <Check size={15} />
             Valider
           </Button>
           <Button variant="secondary" onClick={handlePublish} size="sm">
-            <Copy size={14} />
-            Copier LinkedIn
+            <Copy size={15} />
+            Copier pour LinkedIn
           </Button>
-          <Button variant="ghost" onClick={() => setPreviewOpen(true)} size="sm">
-            <Eye size={14} />
-            Aperçu
+          <Button variant="outline" onClick={() => setPreviewOpen(true)} size="sm">
+            <Eye size={15} />
+            Aperçu Direct
           </Button>
           <Button variant="secondary" onClick={() => setRegenOpen(true)} size="sm">
-            <Sparkles size={14} />
-            Régénérer
+            <Sparkles size={15} className="text-indigo-600" />
+            Régénérer IA
           </Button>
         </div>
-        <div className="flex gap-2">
+
+        <div className="flex items-center gap-2">
           {statut === 'archive' ? (
             <Button variant="ghost" onClick={handleRestore} size="sm">
-              <RotateCcw size={14} />
+              <RotateCcw size={15} />
               Restaurer
             </Button>
           ) : (
             <Button variant="ghost" onClick={handleArchive} size="sm">
-              <Archive size={14} />
+              <Archive size={15} />
               Archiver
             </Button>
           )}
-          <Button variant="ghost" onClick={handleDelete} size="sm" className="text-danger hover:text-danger hover:bg-danger-light">
-            <Trash2 size={14} />
+          <Button variant="ghost" onClick={handleDelete} size="sm" className="text-rose-600 hover:bg-rose-50">
+            <Trash2 size={15} />
             Supprimer
           </Button>
         </div>
       </div>
 
-      {/* Preview modal */}
-      <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} title="Aperçu LinkedIn" size="lg">
-        <div className="space-y-4">
-          {images[0] && <img src={images[0].url} alt="" className="w-full rounded-xl max-h-64 object-cover" />}
-          <div className="whitespace-pre-wrap text-sm text-text-primary leading-relaxed">{formatForLinkedIn(corps)}</div>
-          {hashtags && <p className="text-primary font-medium">{formatHashtags(hashtags)}</p>}
+      {/* LinkedIn Live Preview Modal */}
+      <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} title="Aperçu LinkedIn Post" size="lg">
+        <div className="bg-slate-100 p-6 rounded-2xl">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6 max-w-lg mx-auto space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                IM
+              </div>
+              <div>
+                <div className="text-sm font-bold text-slate-900">IMMEIT Hub</div>
+                <div className="text-xs text-slate-500">Expertise Maintenance &amp; GMAO Industrielle</div>
+              </div>
+            </div>
+
+            <div className="whitespace-pre-wrap text-sm text-slate-800 leading-relaxed font-sans">
+              {formatForLinkedIn(corps)}
+            </div>
+
+            {hashtags && (
+              <p className="text-xs font-bold text-indigo-600 leading-relaxed">
+                {formatHashtags(hashtags)}
+              </p>
+            )}
+
+            {selectedImage >= 0 && images[selectedImage] && (
+              <div className="rounded-xl overflow-hidden border border-slate-200 aspect-video">
+                <img src={images[selectedImage].url} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
         </div>
       </Modal>
 
-      {/* Regen modal */}
-      <Modal open={regenOpen} onClose={() => setRegenOpen(false)} title="Régénérer l'article">
-        <div className="space-y-3">
-          <textarea value={regenFeedback} onChange={e => setRegenFeedback(e.target.value)}
-            className="w-full border border-border rounded-xl p-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 bg-white text-text-primary placeholder:text-text-muted transition-colors"
-            rows={3} placeholder="Indiquez vos consignes de modification..." />
-          <div className="flex flex-wrap gap-2">
+      {/* AI Regeneration Modal */}
+      <Modal open={regenOpen} onClose={() => setRegenOpen(false)} title="Régénérer avec l'IA">
+        <div className="space-y-4">
+          <textarea
+            value={regenFeedback}
+            onChange={e => setRegenFeedback(e.target.value)}
+            className="w-full border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 bg-white text-slate-900 placeholder:text-slate-400"
+            rows={3}
+            placeholder="Consignes particulières (ex: Rends l'accroche plus percutante...)"
+          />
+          <div className="flex flex-wrap gap-1.5">
             {regenSuggestions.map(s => (
-              <button key={s.label} onClick={() => setRegenFeedback(s.text)}
-                className="text-xs px-3 py-1.5 bg-surface-hover rounded-full hover:bg-surface-active text-text-secondary transition-colors cursor-pointer">{s.label}</button>
+              <button
+                key={s.label}
+                onClick={() => setRegenFeedback(s.text)}
+                className="text-xs font-semibold px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-pointer"
+              >
+                {s.label}
+              </button>
             ))}
           </div>
-          <Button onClick={handleRegen} disabled={generating || !regenFeedback} loading={generating} className="w-full">
-            <Sparkles size={14} />
-            {generating ? 'Génération...' : 'Confirmer la régénération'}
+          <Button variant="gradient" onClick={handleRegen} disabled={generating || !regenFeedback} loading={generating} className="w-full">
+            <Sparkles size={16} />
+            Lancer la régénération
           </Button>
         </div>
       </Modal>
 
-      {/* Image search modal */}
-      <Modal open={imageSearchOpen} onClose={() => { setImageSearchOpen(false); setImageResults([]); setImageQuery(''); }} title="Rechercher une image" size="lg">
-        <div className="space-y-3">
+      {/* Pexels Image Search Modal */}
+      <Modal open={imageSearchOpen} onClose={() => { setImageSearchOpen(false); setImageResults([]); setImageQuery(''); }} title="Rechercher une illustration Pexels" size="lg">
+        <div className="space-y-4">
           <div className="flex gap-2">
-            <input value={imageQuery} onChange={e => setImageQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleImageSearch()}
-              placeholder="Rechercher..."
-              className="flex-1 h-9 px-3 text-sm border border-border rounded-lg bg-white placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-colors" />
+            <input
+              value={imageQuery}
+              onChange={e => setImageQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleImageSearch()}
+              placeholder="Ex: industrial maintenance factory technician..."
+              className="flex-1 h-10 px-3.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none"
+            />
             <Button onClick={handleImageSearch}>Chercher</Button>
           </div>
-          <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto">
+          <div className="grid grid-cols-3 gap-3 max-h-80 overflow-y-auto">
             {imageResults.map((img, i) => (
-              <button key={i} onClick={() => {
-                setImages(prev => [...prev, { url: img.url, thumbnail: img.thumbnail, photographer: img.photographer, photographer_url: img.photographer_url, alt: img.alt }]);
-                setImageSearchOpen(false); setImageResults([]); setImageQuery(''); markDirty();
-              }} className="group relative cursor-pointer">
-                <img src={img.thumbnail} alt="" className="w-full h-24 object-cover rounded-xl" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-xl" />
+              <button
+                key={i}
+                onClick={() => {
+                  setImages(prev => [...prev, { url: img.url, thumbnail: img.thumbnail, photographer: img.photographer, photographer_url: img.photographer_url, alt: img.alt }]);
+                  setImageSearchOpen(false); setImageResults([]); setImageQuery(''); markDirty();
+                }}
+                className="group relative rounded-xl overflow-hidden aspect-video border border-slate-200 cursor-pointer"
+              >
+                <img src={img.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div className="absolute inset-0 bg-indigo-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold text-xs">
+                  Sélectionner
+                </div>
               </button>
             ))}
           </div>

@@ -10,7 +10,7 @@ module.exports = requireAuth(async (req, res) => {
   if (!requireCsrf(req, res)) return;
 
   const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
-  if (!rateLimit(ip, 'dashboard-sync', { max: 10, windowMs: 60000 })) {
+  if (!await rateLimit(ip, 'dashboard-sync', { max: 10, windowMs: 60000 })) {
     return res.status(429).json({ error: 'Trop de requêtes. Réessayez dans 1 minute.' });
   }
 

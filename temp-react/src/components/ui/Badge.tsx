@@ -3,12 +3,21 @@ import { cn } from '../../lib/utils';
 type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'muted';
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: 'bg-gray-100 text-gray-700',
-  primary: 'bg-primary-50 text-primary',
-  success: 'bg-success-light text-emerald-700',
-  warning: 'bg-warning-light text-amber-700',
-  danger: 'bg-danger-light text-red-700',
-  muted: 'bg-surface-hover text-text-secondary',
+  default: 'bg-slate-100 text-slate-700 border border-slate-200/60',
+  primary: 'bg-indigo-50 text-indigo-700 border border-indigo-200/60 font-semibold',
+  success: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-semibold',
+  warning: 'bg-amber-50 text-amber-800 border border-amber-200/60 font-semibold',
+  danger: 'bg-rose-50 text-rose-700 border border-rose-200/60 font-semibold',
+  muted: 'bg-slate-100/80 text-slate-600 border border-slate-200/50',
+};
+
+const dotColors: Record<BadgeVariant, string> = {
+  default: 'bg-slate-400',
+  primary: 'bg-indigo-600 pulse-dot',
+  success: 'bg-emerald-500 pulse-dot',
+  warning: 'bg-amber-500 pulse-dot',
+  danger: 'bg-rose-500 pulse-dot',
+  muted: 'bg-slate-400',
 };
 
 interface BadgeProps {
@@ -21,17 +30,15 @@ interface BadgeProps {
 export function Badge({ variant = 'default', dot, children, className }: BadgeProps) {
   return (
     <span className={cn(
-      'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium',
+      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-sans transition-all duration-150',
       variantStyles[variant],
       className
     )}>
-      {dot && <span className={cn('w-1.5 h-1.5 rounded-full', variant === 'success' && 'bg-success', variant === 'warning' && 'bg-warning', variant === 'danger' && 'bg-danger', variant === 'primary' && 'bg-primary', variant === 'muted' && 'bg-text-muted', variant === 'default' && 'bg-gray-400')} />}
+      {dot && <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', dotColors[variant])} />}
       {children}
     </span>
   );
 }
-
-type Status = 'brouillon' | 'en_revision' | 'valide' | 'publie' | 'archive';
 
 const statusConfig: Record<string, { label: string; variant: BadgeVariant }> = {
   brouillon: { label: 'Brouillon', variant: 'muted' },

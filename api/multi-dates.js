@@ -104,15 +104,15 @@ module.exports = requireAuth(async (req, res) => {
       });
     }
     if (q.dateStart || q.dateEnd) {
-      const startMk = q.dateStart ? q.dateStart.slice(0, 7) : '0000-00';
-      const endMk = q.dateEnd ? q.dateEnd.slice(0, 7) : '9999-99';
+      const startDk = q.dateStart || '0000-00-00';
+      const endDk = q.dateEnd || '9999-99-99';
       filtered = filtered.filter(it => {
         const raw = it[dateField];
         if (!raw) return false;
         const dates = excelAllDates(raw);
         return dates.some(d => {
-          const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          return mk >= startMk && mk <= endMk;
+          const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          return dk >= startDk && dk <= endDk;
         });
       });
     }
@@ -125,8 +125,8 @@ module.exports = requireAuth(async (req, res) => {
     let totalExtra = 0;
 
     const hasDateFilter = !!(q.dateStart || q.dateEnd);
-    const startMkForDates = q.dateStart ? q.dateStart.slice(0, 7) : '0000-00';
-    const endMkForDates = q.dateEnd ? q.dateEnd.slice(0, 7) : '9999-99';
+    const startDkForDates = q.dateStart || '0000-00-00';
+    const endDkForDates = q.dateEnd || '9999-99-99';
 
     for (const it of filtered) {
       const raw = dateField ? (it[dateField] || '') : '';
@@ -134,8 +134,8 @@ module.exports = requireAuth(async (req, res) => {
       let dates = excelAllDates(raw);
       if (hasDateFilter) {
         dates = dates.filter(d => {
-          const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          return mk >= startMkForDates && mk <= endMkForDates;
+          const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          return dk >= startDkForDates && dk <= endDkForDates;
         });
       }
       if (dates.length > 1) {

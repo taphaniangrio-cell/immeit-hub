@@ -13,7 +13,7 @@ module.exports = requireAuth(async (req, res) => {
   }
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-  if (!rateLimit(ip, 'news', CONSTANTS.RATE_LIMIT_NEWS)) {
+  if (!await rateLimit(ip, 'news', CONSTANTS.RATE_LIMIT_NEWS)) {
     return res.status(429).json({ error: 'Trop de requêtes. Réessaie dans 1 minute.' });
   }
 

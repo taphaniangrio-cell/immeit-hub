@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
   }
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-  if (!rateLimit(ip, 'auth', CONSTANTS.RATE_LIMIT_AUTH)) {
+  if (!await rateLimit(ip, 'auth', CONSTANTS.RATE_LIMIT_AUTH)) {
     return res.status(429).json({ error: 'Trop de tentatives. Réessaie dans 1 minute.' });
   }
 

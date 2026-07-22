@@ -17,7 +17,7 @@ module.exports = requireAuth(async (req, res) => {
   }
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-  if (!rateLimit(ip, 'generate', CONSTANTS.RATE_LIMIT_GENERATE)) {
+  if (!await rateLimit(ip, 'generate', CONSTANTS.RATE_LIMIT_GENERATE)) {
     return res.status(429).json({ error: 'Trop de requetes. Reessaie dans 1 minute.' });
   }
 

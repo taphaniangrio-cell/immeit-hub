@@ -1,11 +1,10 @@
 import React from 'react';
 import { useStore } from '../../stores/appStore';
-import { articleApi } from '../../lib/api';
 import { StatusBadge } from '../ui/Badge';
 import { SkeletonCard } from '../ui/Skeleton';
 import { Button } from '../ui/Button';
 import { PAGE_SIZE, fmtDate, cn } from '../../lib/utils';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Sparkles, FileText } from 'lucide-react';
 import type { Article } from '../../types';
 
 export function ArticlesList({ onSelect }: { onSelect: (article: Article | null) => void }) {
@@ -22,21 +21,21 @@ export function ArticlesList({ onSelect }: { onSelect: (article: Article | null)
   const totalPages = Math.ceil(totalArticles / PAGE_SIZE);
 
   return (
-    <div className="w-80 shrink-0 border-r border-border bg-surface flex flex-col max-md:w-full max-md:border-r-0">
+    <div className="w-84 shrink-0 border-r border-slate-200/80 bg-white/60 backdrop-blur-md flex flex-col max-md:w-full max-md:border-r-0 h-full">
       {/* Header */}
-      <div className="p-3 border-b border-border-light bg-surface-elevated">
-        <Button onClick={() => onSelect(null)} className="w-full" size="md">
-          <Plus size={16} />
-          Nouvel article
+      <div className="p-4 border-b border-slate-100 bg-white/90">
+        <Button variant="gradient" onClick={() => onSelect(null)} className="w-full shadow-md" size="md">
+          <Sparkles size={16} className="animate-pulse" />
+          Nouveau post avec IA
         </Button>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 p-2 overflow-x-auto border-b border-border-light bg-surface-elevated">
+      <div className="flex gap-1.5 p-3 overflow-x-auto border-b border-slate-100 bg-slate-50/50 scrollbar-none">
         {[
           { key: '', label: 'Tous' },
           { key: 'brouillon', label: 'Brouillon' },
-          { key: 'en_revision', label: 'En révision' },
+          { key: 'en_revision', label: 'Révision' },
           { key: 'valide', label: 'Validé' },
           { key: 'publie', label: 'Publié' },
           { key: 'archive', label: 'Archivé' },
@@ -45,10 +44,10 @@ export function ArticlesList({ onSelect }: { onSelect: (article: Article | null)
             key={tab.key}
             onClick={() => setFilter(tab.key as any)}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer",
+              "px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer",
               filter === tab.key
-                ? 'bg-primary text-white shadow-xs'
-                : 'bg-surface-hover text-text-secondary hover:bg-surface-active hover:text-text-primary'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 border border-slate-200/60 hover:bg-slate-100 hover:text-slate-900'
             )}
           >
             {tab.label}
@@ -57,11 +56,17 @@ export function ArticlesList({ onSelect }: { onSelect: (article: Article | null)
       </div>
 
       {/* Article list */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
         ) : articles.length === 0 ? (
-          <p className="text-center text-text-muted text-sm py-8">Aucun article trouvé</p>
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 mb-3">
+              <FileText size={22} />
+            </div>
+            <p className="text-sm font-bold text-slate-800">Aucun article trouvé</p>
+            <p className="text-xs text-slate-500 mt-1">Créez votre premier article ou changez de filtre.</p>
+          </div>
         ) : (
           articles.map(a => (
             <ArticleCard key={a.id} article={a} active={editingId === a.id} onClick={() => onSelect(a)} />
@@ -71,21 +76,21 @@ export function ArticlesList({ onSelect }: { onSelect: (article: Article | null)
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between p-3 border-t border-border-light bg-surface-elevated text-sm">
+        <div className="flex items-center justify-between p-3.5 border-t border-slate-100 bg-white/90 text-sm">
           <button
             disabled={currentPage <= 1}
             onClick={() => setCurrentPage(currentPage - 1)}
-            className="p-1.5 rounded-md border border-border disabled:opacity-30 hover:bg-surface-hover transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-colors cursor-pointer"
           >
-            <ChevronLeft size={14} />
+            <ChevronLeft size={16} />
           </button>
-          <span className="text-xs text-text-muted font-medium">Page {currentPage} / {totalPages} ({totalArticles})</span>
+          <span className="text-xs text-slate-500 font-semibold">Page {currentPage} / {totalPages} ({totalArticles})</span>
           <button
             disabled={currentPage >= totalPages}
             onClick={() => setCurrentPage(currentPage + 1)}
-            className="p-1.5 rounded-md border border-border disabled:opacity-30 hover:bg-surface-hover transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl border border-slate-200 disabled:opacity-30 hover:bg-slate-100 transition-colors cursor-pointer"
           >
-            <ChevronRight size={14} />
+            <ChevronRight size={16} />
           </button>
         </div>
       )}
@@ -99,35 +104,34 @@ function ArticleCard({ article, active, onClick }: { article: Article; active: b
     <button
       onClick={onClick}
       className={cn(
-        "group w-full text-left rounded-xl transition-all duration-150 outline-none",
+        "group w-full text-left rounded-2xl transition-all duration-200 outline-none cursor-pointer relative overflow-hidden",
         active
-          ? 'bg-primary-50 border-l-4 border-l-primary border border-primary-200 shadow-xs pl-4 pr-3 py-3'
-          : 'bg-surface-elevated border border-border hover:border-gray-300 hover:shadow-xs pl-4 pr-3 py-3'
+          ? 'bg-gradient-to-r from-indigo-50 to-blue-50/50 border border-indigo-300 shadow-sm p-4'
+          : 'bg-white border border-slate-200/80 hover:border-indigo-300/80 hover:shadow-md p-4'
       )}
     >
+      {active && (
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-600 to-blue-600 rounded-r-md" />
+      )}
       <div className="flex items-start justify-between gap-2">
         <h3 className={cn(
-          "text-sm font-semibold leading-snug truncate transition-colors",
-          active ? 'text-primary' : 'text-text-primary group-hover:text-primary'
+          "text-sm font-bold leading-snug truncate transition-colors",
+          active ? 'text-indigo-950' : 'text-slate-900 group-hover:text-indigo-600'
         )}>
           {article.titre_interne || 'Sans titre'}
         </h3>
-        {active && <span className="shrink-0 w-2 h-2 rounded-full bg-primary animate-pulse mt-1.5" />}
       </div>
       {excerpt && (
         <p className={cn(
-          "text-xs mt-1.5 line-clamp-1 transition-colors",
-          active ? 'text-primary/60' : 'text-text-muted'
+          "text-xs mt-1.5 line-clamp-2 leading-relaxed transition-colors",
+          active ? 'text-indigo-900/70' : 'text-slate-500'
         )}>
           {excerpt}…
         </p>
       )}
-      <div className="flex items-center justify-between mt-2.5">
+      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100">
         <StatusBadge status={article.statut} />
-        <span className={cn(
-          "text-[10px] transition-colors",
-          active ? 'text-primary/50' : 'text-text-muted'
-        )}>
+        <span className="text-[11px] font-medium text-slate-400">
           {fmtDate(article.date_creation)}
         </span>
       </div>
