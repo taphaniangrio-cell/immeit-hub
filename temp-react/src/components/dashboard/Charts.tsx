@@ -126,7 +126,7 @@ export function LineChart({ data, maxMonth, minMonth, average, selectedMonth, on
           const isMax = maxMonth && d.month === maxMonth;
           const isMin = minMonth && d.month === minMonth;
           const isSelected = selectedMonth && d.key === selectedMonth;
-          const color = isSelected ? '#F97316' : isMax ? '#10B981' : isMin ? '#EF4444' : '#2563EB';
+          const color = isSelected ? '#EC4899' : isMax ? '#10B981' : isMin ? '#EF4444' : '#2563EB';
           const r = isSelected ? 5.5 : isMax || isMin ? 4.5 : 3;
           const handleClick = () => { if (onMonthClick && d.key) onMonthClick(d.key); };
           return (
@@ -141,7 +141,7 @@ export function LineChart({ data, maxMonth, minMonth, average, selectedMonth, on
           const isMax = maxMonth && d.month === maxMonth;
           const isMin = minMonth && d.month === minMonth;
           const isSelected = selectedMonth && d.key === selectedMonth;
-          const color = isSelected ? '#F97316' : isMax ? '#10B981' : isMin ? '#EF4444' : '#0F172A';
+          const color = isSelected ? '#EC4899' : isMax ? '#10B981' : isMin ? '#EF4444' : '#0F172A';
           const handleClick = () => { if (onMonthClick && d.key) onMonthClick(d.key); };
           return (
             <text key={`v${i}`} x={edgePad + i * pw} y={yScale(d.count) - 7} textAnchor="middle" fontSize="10" fontWeight="bold" fill={color}
@@ -153,7 +153,7 @@ export function LineChart({ data, maxMonth, minMonth, average, selectedMonth, on
           const handleClick = () => { if (onMonthClick && d.key) onMonthClick(d.key); };
           return (
             <text key={`l${i}`} x={edgePad + i * pw} y={h + 12} textAnchor="middle" fontSize="9"
-              fill={isSelected ? '#F97316' : '#94A3B8'} fontWeight={isSelected ? '700' : '400'}
+              fill={isSelected ? '#EC4899' : '#94A3B8'} fontWeight={isSelected ? '700' : '400'}
               style={{ cursor: onMonthClick && d.key ? 'pointer' : undefined }} onClick={handleClick}>{d.month}</text>
           );
         })}
