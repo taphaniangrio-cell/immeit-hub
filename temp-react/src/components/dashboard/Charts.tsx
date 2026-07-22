@@ -87,7 +87,14 @@ export function DonutChart({ data, colorMap, onFilterClick }: { data: { label: s
   );
 }
 
-export function LineChart({ data, maxMonth, minMonth, average }: { data: { month: string; count: number }[]; maxMonth?: string; minMonth?: string; average?: number }) {
+export function LineChart({ data, maxMonth, minMonth, average, selectedMonth, onMonthClick }: {
+  data: { month: string; count: number; key?: string }[];
+  maxMonth?: string;
+  minMonth?: string;
+  average?: number;
+  selectedMonth?: string;
+  onMonthClick?: (key: string) => void;
+}) {
   const gradId = useId();
   const w = 340, pad = 24, h = 110, labelH = 18, edgePad = 30;
   const maxCount = Math.max(...data.map(d => d.count), 1);
@@ -118,19 +125,38 @@ export function LineChart({ data, maxMonth, minMonth, average }: { data: { month
         {data.map((d, i) => {
           const isMax = maxMonth && d.month === maxMonth;
           const isMin = minMonth && d.month === minMonth;
-          const color = isMax ? '#10B981' : isMin ? '#EF4444' : '#2563EB';
-          const r = isMax || isMin ? 4.5 : 3;
-          return <circle key={i} cx={edgePad + i * pw} cy={yScale(d.count)} r={r} fill={color} />;
+          const isSelected = selectedMonth && d.key === selectedMonth;
+          const color = isSelected ? '#7C3AED' : isMax ? '#10B981' : isMin ? '#EF4444' : '#2563EB';
+          const r = isSelected ? 5.5 : isMax || isMin ? 4.5 : 3;
+          const handleClick = () => { if (onMonthClick && d.key) onMonthClick(d.key); };
+          return (
+            <g key={i} style={{ cursor: onMonthClick && d.key ? 'pointer' : undefined }} onClick={handleClick}>
+              <circle cx={edgePad + i * pw} cy={yScale(d.count)} r={r + 4} fill="transparent" />
+              <circle cx={edgePad + i * pw} cy={yScale(d.count)} r={r} fill={color} />
+              {isSelected && <circle cx={edgePad + i * pw} cy={yScale(d.count)} r={r + 3} fill="none" stroke={color} strokeWidth="1.5" opacity="0.4" />}
+            </g>
+          );
         })}
         {data.map((d, i) => {
           const isMax = maxMonth && d.month === maxMonth;
           const isMin = minMonth && d.month === minMonth;
-          const color = isMax ? '#10B981' : isMin ? '#EF4444' : '#0F172A';
-          return <text key={`v${i}`} x={edgePad + i * pw} y={yScale(d.count) - 7} textAnchor="middle" fontSize="10" fontWeight="bold" fill={color}>{d.count}</text>;
+          const isSelected = selectedMonth && d.key === selectedMonth;
+          const color = isSelected ? '#7C3AED' : isMax ? '#10B981' : isMin ? '#EF4444' : '#0F172A';
+          const handleClick = () => { if (onMonthClick && d.key) onMonthClick(d.key); };
+          return (
+            <text key={`v${i}`} x={edgePad + i * pw} y={yScale(d.count) - 7} textAnchor="middle" fontSize="10" fontWeight="bold" fill={color}
+              style={{ cursor: onMonthClick && d.key ? 'pointer' : undefined }} onClick={handleClick}>{d.count}</text>
+          );
         })}
-        {data.map((d, i) => (
-          <text key={`l${i}`} x={edgePad + i * pw} y={h + 12} textAnchor="middle" fontSize="9" fill="#94A3B8">{d.month}</text>
-        ))}
+        {data.map((d, i) => {
+          const isSelected = selectedMonth && d.key === selectedMonth;
+          const handleClick = () => { if (onMonthClick && d.key) onMonthClick(d.key); };
+          return (
+            <text key={`l${i}`} x={edgePad + i * pw} y={h + 12} textAnchor="middle" fontSize="9"
+              fill={isSelected ? '#7C3AED' : '#94A3B8'} fontWeight={isSelected ? '700' : '400'}
+              style={{ cursor: onMonthClick && d.key ? 'pointer' : undefined }} onClick={handleClick}>{d.month}</text>
+          );
+        })}
       </svg>
     </div>
   );

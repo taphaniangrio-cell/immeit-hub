@@ -391,11 +391,12 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
   const [filterDemandeur, setFilterDemandeur] = useState('');
   const [filterBanc, setFilterBanc] = useState<string[]>([]);
   const [filterDateDepot, setFilterDateDepot] = useState<string[]>([]);
+  const [filterMonth, setFilterMonth] = useState('');
   const [tablePage, setTablePage] = useState(0);
   const userAdjustedDates = useRef(false);
   const PAGE_SIZE = 50;
 
-  useEffect(() => { setTablePage(0); }, [filterStatus, filterSearch, filterNature, filterSite, filterType, filterDemandeur, filterBanc, filterDateDepot, dateStart, dateEnd]);
+  useEffect(() => { setTablePage(0); }, [filterStatus, filterSearch, filterNature, filterSite, filterType, filterDemandeur, filterBanc, filterDateDepot, filterMonth, dateStart, dateEnd]);
 
   // Load cache instantly on mount, then fetch fresh data in background
   useEffect(() => {
@@ -666,6 +667,15 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
       const match = searchableFields.some(f => norm(item[f] || '').includes(normSearch));
       if (!match) return false;
     }
+    if (filterMonth && dateField) {
+      const raw = item[dateField];
+      if (!raw) return false;
+      const dates = excelAllDates(raw);
+      if (!dates.some(d => {
+        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        return mk === filterMonth;
+      })) return false;
+    }
     if (dateField) {
       const raw = item[dateField];
       if (!raw || !raw.trim()) return false;
@@ -678,7 +688,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
     return true;
   }), [items, statusField, natureField, typeField, siteField, demandeurField, bancField, searchableFields, dateField, normFilterStatus, normNature, normType, normSite, normDemandeur, normBanc, normSearch, filterStartDk, filterEndDk, filterDateDepot]);
 
-  const isFiltered = filterStatus !== '' || filterSearch !== '' || filterNature !== '' || filterType !== '' || filterSite !== '' || filterDemandeur !== '' || filterBanc.length > 0 || filterDateDepot.length > 0 || (dateStart !== '' && dateStart !== defaultDateStart) || (dateEnd !== '' && dateEnd !== defaultDateEnd);
+  const isFiltered = filterStatus !== '' || filterSearch !== '' || filterNature !== '' || filterType !== '' || filterSite !== '' || filterDemandeur !== '' || filterBanc.length > 0 || filterDateDepot.length > 0 || filterMonth !== '' || (dateStart !== '' && dateStart !== defaultDateStart) || (dateEnd !== '' && dateEnd !== defaultDateEnd);
   const stats = useMemo(() => filteredItems.length > 0 && headers.length > 0 ? computeStats(headers, filteredItems, dateStartMs, dateEndMs) : null, [headers, filteredItems, dateStartMs, dateEndMs]);
   const total = stats?.total || 0;
   const totalTraitements = useMemo(() => {
@@ -700,6 +710,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
     setFilterDemandeur('');
     setFilterBanc([]);
     setFilterDateDepot([]);
+    setFilterMonth('');
     userAdjustedDates.current = false;
     setDateStart(defaultDateStart);
     setDateEnd(defaultDateEnd);
@@ -808,6 +819,9 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
             {filterDateDepot.map(d => (
               <FilterChip key={d} label={d} color="primary" onRemove={() => setFilterDateDepot(filterDateDepot.filter(v => v !== d))} />
             ))}
+            {filterMonth && (
+              <FilterChip label={`Mois: ${fmtMonth(filterMonth)}`} color="primary" onRemove={() => setFilterMonth('')} />
+            )}
             {((dateStart && dateStart !== defaultDateStart) || (dateEnd && dateEnd !== defaultDateEnd)) && (
               <FilterChip
                 label={`${dateStart.split('-').reverse().join('/')} → ${dateEnd.split('-').reverse().join('/')}`}
@@ -887,7 +901,7 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
                   const maxLabel = best ? fmtMonth(best.month) : undefined;
                   const minLabel = worst && best && worst.month !== best.month ? fmtMonth(worst.month) : undefined;
                   const avgCompleted = completedOnly.length > 0 ? Math.round(completedOnly.reduce((s, m) => s + m.count, 0) / completedOnly.length) : undefined;
-                  return <LineChart data={stats.monthlyTrend.map(m => ({ month: fmtMonth(m.month), count: m.count }))} maxMonth={maxLabel} minMonth={minLabel} average={avgCompleted} />;
+                  return <LineChart data={stats.monthlyTrend.map(m => ({ month: fmtMonth(m.month), count: m.count, key: m.month }))} maxMonth={maxLabel} minMonth={minLabel} average={avgCompleted} selectedMonth={filterMonth || undefined} onMonthClick={(mk) => setFilterMonth(prev => prev === mk ? '' : mk)} />;
                 })()}
               </div>
               <div className="flex-1 space-y-3 pt-1">
