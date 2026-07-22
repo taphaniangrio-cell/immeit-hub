@@ -683,15 +683,6 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
       const match = searchableFields.some(f => norm(item[f] || '').includes(normSearch));
       if (!match) return false;
     }
-    if (filterMonth && dateField) {
-      const raw = item[dateField];
-      if (!raw) return false;
-      const dates = excelAllDates(raw);
-      if (!dates.some(d => {
-        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        return mk === filterMonth;
-      })) return false;
-    }
     if (dateField) {
       const raw = item[dateField];
       if (!raw || !raw.trim()) return false;
@@ -702,9 +693,9 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
       })) return false;
     }
     return true;
-  }), [items, statusField, natureField, typeField, siteField, demandeurField, bancField, searchableFields, dateField, normFilterStatus, normNature, normType, normSite, normDemandeur, normBanc, normSearch, filterStartDk, filterEndDk, filterDateDepot, filterMonth]);
+  }), [items, statusField, natureField, typeField, siteField, demandeurField, bancField, searchableFields, dateField, normFilterStatus, normNature, normType, normSite, normDemandeur, normBanc, normSearch, filterStartDk, filterEndDk, filterDateDepot]);
 
-  const isFiltered = filterStatus !== '' || filterSearch !== '' || filterNature !== '' || filterType !== '' || filterSite !== '' || filterDemandeur !== '' || filterBanc.length > 0 || filterDateDepot.length > 0 || filterMonth !== '' || (dateStart !== '' && dateStart !== defaultDateStart) || (dateEnd !== '' && dateEnd !== defaultDateEnd);
+  const isFiltered = filterStatus !== '' || filterSearch !== '' || filterNature !== '' || filterType !== '' || filterSite !== '' || filterDemandeur !== '' || filterBanc.length > 0 || filterDateDepot.length > 0 || (dateStart !== '' && dateStart !== defaultDateStart) || (dateEnd !== '' && dateEnd !== defaultDateEnd);
   const stats = useMemo(() => filteredItems.length > 0 && headers.length > 0 ? computeStats(headers, filteredItems, dateStartMs, dateEndMs) : null, [headers, filteredItems, dateStartMs, dateEndMs]);
   const total = stats?.total || 0;
   const totalTraitements = useMemo(() => {
@@ -835,9 +826,6 @@ export function DashboardPage({ showToast, setView }: { showToast: (msg: string,
             {filterDateDepot.map(d => (
               <FilterChip key={d} label={d} color="primary" onRemove={() => setFilterDateDepot(filterDateDepot.filter(v => v !== d))} />
             ))}
-            {filterMonth && (
-              <FilterChip label={`Mois: ${fmtMonth(filterMonth)}`} color="primary" onRemove={() => setFilterMonth('')} />
-            )}
             {((dateStart && dateStart !== defaultDateStart) || (dateEnd && dateEnd !== defaultDateEnd)) && (
               <FilterChip
                 label={`${dateStart.split('-').reverse().join('/')} → ${dateEnd.split('-').reverse().join('/')}`}
