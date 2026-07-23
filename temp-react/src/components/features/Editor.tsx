@@ -219,10 +219,11 @@ export function Editor({ article, onBack, onDelete }: { article: Article | null;
   const handleRegen = async () => {
     setGenerating(true);
     try {
+      const existingData = { titre_interne: titre, accroche_a: accrocheA, accroche_b: accrocheB, corps };
       const res = await generateApi.preview({
         feedback: regenFeedback,
         regenerate: true,
-        existing: { titre_interne: titre, accroche_a: accrocheA, accroche_b: accrocheB, corps },
+        existing: existingData,
         provider: localStorage.getItem('immeit_ai_provider') || undefined,
         model: localStorage.getItem(`immeit_ai_model_${localStorage.getItem('immeit_ai_provider')}`) || undefined,
       });
