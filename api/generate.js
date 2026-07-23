@@ -25,7 +25,7 @@ module.exports = requireAuth(async (req, res) => {
     const { news, feedback, provider, model, customPrompt, preview, regenerate, existing } = req.body;
     log('info', 'generate_received', { regenerate: !!regenerate, hasExisting: !!existing, hasCustomPrompt: !!customPrompt, hasNews: !!news });
 
-    if (!regenerate && !customPrompt && (!news || !news.titre)) {
+    if (!regenerate && !existing && !customPrompt && (!news || !news.titre)) {
       return res.status(400).json({ error: 'Actualite source ou sujet libre requis' });
     }
 
