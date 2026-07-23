@@ -22,7 +22,7 @@ module.exports = requireAuth(async (req, res) => {
   }
 
   try {
-    const { news, feedback, provider, model, customPrompt } = req.body;
+    const { news, feedback, provider, model, customPrompt, preview } = req.body;
 
     if (!customPrompt && (!news || !news.titre)) {
       return res.status(400).json({ error: 'Actualite source ou sujet libre requis' });
@@ -42,7 +42,7 @@ module.exports = requireAuth(async (req, res) => {
     const resolvedModel = model || null;
     const generationType = sanitizedPrompt ? 'custom' : 'news';
 
-    log('info', 'generate_start', { type: generationType, provider: resolvedProvider, model: resolvedModel });
+    log('info', 'generate_start', { type: generationType, provider: resolvedProvider, model: resolvedModel, preview: !!preview });
 
     const article = await generateArticle(news, feedback || '', resolvedProvider, resolvedModel, sanitizedPrompt || null);
 
@@ -63,6 +63,26 @@ module.exports = requireAuth(async (req, res) => {
     }
 
     log('info', 'generate_article_parsed', { titre: titre.slice(0, 50), corpsLength: corps.length, modelUsed: article._modelUsed });
+
+    if (preview) {
+      log('info', 'generate_preview_done', { modelUsed: article._modelUsed });
+      return res.status(200).json({
+        article: {
+          titre_interne: article.titre_interne || 'Sans titre',
+          corps: article.corps || '',
+          accroche_a: article.accroche_a || null,
+          accroche_b: article.accroche_b || null,
+          hashtags: article.hashtags || [],
+          image_keywords: article.image_keywords || [],
+        },
+        ia: {
+          provider: resolvedProvider,
+          model: resolvedModel || (article._modelUsed || null),
+          generation_type: generationType,
+          custom_subject: sanitizedPrompt || null,
+        }
+      });
+    }
 
     let images = [];
     try {
