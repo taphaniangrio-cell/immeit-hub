@@ -219,8 +219,9 @@ export function Editor({ article, onBack, onDelete }: { article: Article | null;
   const handleRegen = async () => {
     setGenerating(true);
     try {
+      const context = regenFeedback || `Titre: ${titre}\n\nContenu existant:\n${corps.slice(0, 800)}`;
       const res = await generateApi.preview({
-        customPrompt: regenFeedback || titre,
+        customPrompt: context,
         feedback: regenFeedback,
         provider: localStorage.getItem('immeit_ai_provider') || undefined,
         model: localStorage.getItem(`immeit_ai_model_${localStorage.getItem('immeit_ai_provider')}`) || undefined,
