@@ -65,8 +65,8 @@ export interface QualityScore {
 }
 
 const HEDGE_WORDS = /(\b(arguably|il pourrait être dit|dans certains cas|certains experts|on peut avancer|il est important de noter|il convient de souligner|force est de constater|it could be argued|in some cases|some experts believe|it is important to note)\b)/gi;
-const CONTRACTIONS = /\b(j'ai|j'suis|j'pense|j'dis|j'vais|j'crois|j'vois|j'fais|c'est|c'que|c'là|c'qui|on fait|y'a|t'as|n'attendez|n'attendons|qu'on|qu'il|qu'elle|qu'elles|qu'ils|s'est|n'est|n'a|y'avait|c'était|j'avais|j'aurais|on a|on a vu|on a constaté)\b/gi;
-const PERSONAL_ANCHORS = /\b(\d{1,3}[\s]*%|il y a \d+|en \d{4}|la semaine dernière|ce mois|hier|aujourd'hui|dans mon|de mon|notre client|un client|j'ai \w+|on a \w+|on fait|on travaille avec|on accompagne|depuis \d+|pendant \d+|\d+ mois|\d+ semaines|\d+ heures|\d+ jours|\d+ ans|\d+ années)\b/gi;
+const CONTRACTIONS = /(?:j['\u2019]ai|j['\u2019]suis|j['\u2019]pense|j['\u2019]dis|j['\u2019]vais|j['\u2019]crois|j['\u2019]vois|j['\u2019]fais|c['\u2019]est|c['\u2019]que|c['\u2019]là|c['\u2019]qui|on fait|y['\u2019]a|t['\u2019]as|n['\u2019]attendez|n['\u2019]attendons|qu['\u2019]on|qu['\u2019]il|qu['\u2019]elle|qu['\u2019]elles|qu['\u2019]ils|s['\u2019]est|n['\u2019]est|n['\u2019]a|y['\u2019]avait|c['\u2019]était|j['\u2019]avais|j['\u2019]aurais|on a|on a vu|on a constaté)/gi;
+const PERSONAL_ANCHORS = /(\d{1,3}\s*%|il y a \d+|en \d{4}|la semaine dernière|ce mois[- ]?ci|hier|aujourd['\u2019]hui|dans mon|de mon|notre client|un client|j['\u2019]ai \w+|j['\u2019]y \w+ \w+|m['\u2019]a \w+|on a \w+|on a vu|on a constaté|on a équipé|on a installé|on fait|on travaille avec|on accompagne|je \w+|depuis \d+|pendant \d+|\d+ mois|\d+ semaines|\d+ heures|\d+ jours|\d+ ans|\d+ années)/gi;
 
 export function scoreArticleQuality(text: string): QualityScore {
   const words = text.split(/\s+/).filter(Boolean);
